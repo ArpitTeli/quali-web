@@ -19,6 +19,19 @@ const priorityBadgeClass = {
   'Low': 'badge-green',
 }
 
+function loadTodos() {
+  try {
+    const raw = localStorage.getItem('quali_todos')
+    return raw ? JSON.parse(raw) : []
+  } catch { return [] }
+}
+
+function saveTodos(todos) {
+  try {
+    localStorage.setItem('quali_todos', JSON.stringify(todos))
+  } catch { /* ignore */ }
+}
+
 export default function TodoList() {
   const [filters, setFilters] = useState(defaultFilters)
   const [selectedIds, setSelectedIds] = useState([])
@@ -30,16 +43,13 @@ export default function TodoList() {
   const initialLoadDone = useRef(false)
 
   useEffect(() => {
-    if (!window.electronAPI) return
-    window.electronAPI.todosGet().then((result) => {
-      if (result && result.todos) setItems(result.todos)
-      initialLoadDone.current = true
-    })
+    setItems(loadTodos())
+    initialLoadDone.current = true
   }, [])
 
   useEffect(() => {
-    if (!window.electronAPI || !initialLoadDone.current) return
-    window.electronAPI.todosSave(items)
+    if (!initialLoadDone.current) return
+    saveTodos(items)
   }, [items])
 
   const addItem = () => {

@@ -11,26 +11,9 @@ import MasterCard from './components/right-panel/MasterCard'
 import CompetitionWidget from './components/right-panel/CompetitionWidget'
 import AddLeadModal from './components/AddLeadModal'
 import { FaBell } from 'react-icons/fa'
-import { X, FileText, BarChart3, CheckCircle, AlertCircle, XCircle, Calendar, Globe, Upload, Clock, Users } from 'lucide-react'
+import { X, FileText, BarChart3, CheckCircle, AlertCircle, XCircle, Globe, Upload, Clock, Users } from 'lucide-react'
 import * as api from './services/api'
 import * as storage from './services/storage'
-
-function detectColumns(headers) {
-  const aliases = {
-    name: ['name', 'lead name', 'company name', 'business name', 'firm name', 'contact name'],
-    query: ['query', 'search', 'search term', 'search query'],
-    website: ['website', 'url', 'site', 'web', 'webpage'],
-    company_phone: ['company_phone', 'company phone', 'phone', 'telephone', 'contact number', 'mobile', 'phone number', 'cell', 'tel'],
-    email: ['email', 'e-mail', 'mail', 'contact email', 'email address']
-  }
-  const mapping = {}
-  const normalized = headers.map(h => ({ original: h, norm: String(h).toLowerCase().trim().replace(/[\s_-]+/g, ' ') }))
-  for (const [col, aliasList] of Object.entries(aliases)) {
-    const found = normalized.find(n => aliasList.some(a => n.norm === a || n.norm.includes(a)))
-    mapping[col] = found ? found.original : null
-  }
-  return mapping
-}
 
 function mapRowData(row, mapping) {
   const mapped = {}
@@ -63,6 +46,7 @@ function App() {
   const [rowCount, setRowCount] = useState(0)
   const [isAdditional, setIsAdditional] = useState(false)
 
+  const allRowsRef = useRef([])
   const [allRows, setAllRows] = useState([])
   const [batchRows, setBatchRows] = useState([])
   const [stats, setStats] = useState({ total: 0, processed: 0, remaining: 0, inBatch: 0 })
@@ -84,6 +68,11 @@ function App() {
   const [commentText, setCommentText] = useState('')
   const commentTimerRef = useRef(null)
   const [cloudMasterData, setCloudMasterData] = useState({ names: new Set(), phones: new Set() })
+  const [selectedLead, setSelectedLead] = useState(null)
+
+  useEffect(() => {
+    allRowsRef.current = allRows
+  }, [allRows])
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -129,7 +118,7 @@ function App() {
       }
       refresh()
     }
-  }, [view, auth.loggedIn])
+  }, [view, auth.loggedIn, auth.masterSheetId])
 
   const handleLogin = useCallback(async ({ uid, password }) => {
     const result = await api.login(uid, password)
@@ -169,13 +158,18 @@ function App() {
     }
 
     const mapping = setupData.columnMapping
-    let rows = sheet.data.map((r, i) => ({
-      ...mapRowData(r, mapping),
-      rowId: `row-${++rowIdCounter}`,
-      tag: null,
-      status: 'unprocessed'
-    }))
+    const newRows = sheet.data.map((r) => {
+      const mapped = mapRowData(r, mapping)
+      return {
+        ...mapped,
+        searchValue: mapped.name || '',
+        rowId: `row-${++rowIdCounter}`,
+        tag: null,
+        status: 'unprocessed'
+      }
+    })
 
+    let rows = newRows
     let skippedByCloud = 0
     if (cloudMasterData.names.size > 0 || cloudMasterData.phones.size > 0) {
       const before = rows.length
@@ -189,35 +183,38 @@ function App() {
       skippedByCloud = before - rows.length
     }
 
-    if (skippedByCloud > 0) {
-      setCloudMasterFiltered(skippedByCloud)
-      addToast(`${skippedByCloud} lead(s) skipped — already tagged by others`, 'info')
+    if (skedByCloud > 0) {
+      setCloudMasterFiltered(skedByCloud)
+      addToast(`${skedByCloud} lead(s) skipped — already tagged by others`, 'info')
     } else {
       setCloudMasterFiltered(0)
     }
 
-    const newAllRows = isAdditional ? [...allRows, ...rows] : rows
-    setAllRows(newAllRows)
+    const existingRows = isAdditional ? allRowsRef.current : []
+    const combinedRows = [...existingRows, ...rows]
+    const batchSlice = combinedRows.filter(r => r.status === 'unprocessed').slice(0, setupData.batchSize)
+    const batchIds = new Set(batchSlice.map(r => r.rowId))
+    const updatedAllRows = combinedRows.map(r => batchIds.has(r.rowId) ? { ...r, status: 'in_batch' } : r)
 
-    const processed = newAllRows.filter(r => r.status === 'processed' || r.tag).length
-    const remaining = newAllRows.filter(r => r.status === 'unprocessed').length
-    const batchSlice = newAllRows.filter(r => r.status === 'unprocessed').slice(0, setupData.batchSize)
-    batchSlice.forEach(r => { r.status = 'in_batch' })
+    setAllRows(updatedAllRows)
+    allRowsRef.current = updatedAllRows
 
-    const newStats = {
-      total: newAllRows.length,
+    const processed = updatedAllRows.filter(r => r.status === 'processed' || r.tag).length
+    const remaining = updatedAllRows.filter(r => r.status === 'unprocessed').length
+
+    setStats({
+      total: updatedAllRows.length,
       processed,
       remaining,
       inBatch: batchSlice.length
-    }
-
-    setStats(newStats)
+    })
     setBatchRows(batchSlice)
     setIsComplete(remaining === 0)
     setBatchComplete(false)
 
     if (batchSlice.length > 0) {
       setActiveTab(batchSlice[0].rowId)
+      setSelectedLead(batchSlice[0])
     }
 
     setView('batch')
@@ -232,16 +229,17 @@ function App() {
     setActivities(act)
 
     addToast(`Loaded ${rows.length} leads${skedByCloud > 0 ? ` (${skedByCloud} skipped)` : ''}`, 'success')
-  }, [excelData, allRows, isAdditional, cloudMasterData, addToast])
+  }, [excelData, isAdditional, cloudMasterData, addToast])
 
   const handleTag = useCallback(async (rowId, tag) => {
-    setBatchRows(prev => {
-      const updated = prev.map(r => r.rowId === rowId ? { ...r, tag, status: 'processed' } : r)
-      return updated
-    })
-    setAllRows(prev => prev.map(r => r.rowId === rowId ? { ...r, tag, status: 'processed' } : r))
+    const row = allRowsRef.current.find(r => r.rowId === rowId)
 
-    const row = batchRows.find(r => r.rowId === rowId)
+    const updatedAll = allRowsRef.current.map(r => r.rowId === rowId ? { ...r, tag, status: 'processed' } : r)
+    setAllRows(updatedAll)
+    allRowsRef.current = updatedAll
+
+    setBatchRows(prev => prev.map(r => r.rowId === rowId ? { ...r, tag, status: 'processed' } : r))
+
     if (row) {
       try {
         await api.addTag({
@@ -262,34 +260,48 @@ function App() {
       })
     }
 
-    setStats(prev => ({
-      ...prev,
-      processed: prev.processed + 1,
-      remaining: prev.remaining - 1,
-    }))
-  }, [batchRows, auth])
+    setStats(prev => {
+      const newProcessed = prev.processed + 1
+      const newRemaining = prev.remaining - 1
+      const newInBatch = prev.inBatch - 1
+      const totalDone = newProcessed
+      const totalRows = prev.total
+      if (totalDone >= totalRows) {
+        setTimeout(() => setIsComplete(true), 0)
+      }
+      return {
+        ...prev,
+        processed: newProcessed,
+        remaining: newRemaining,
+        inBatch: newInBatch
+      }
+    })
+  }, [auth])
 
   const handleNextBatch = useCallback(() => {
-    setAllRows(prev => {
-      const remaining = prev.filter(r => r.status === 'unprocessed')
-      const batch = remaining.slice(0, batchSize)
-      batch.forEach(r => { r.status = 'in_batch' })
+    const current = allRowsRef.current
+    const remaining = current.filter(r => r.status === 'unprocessed')
+    const batch = remaining.slice(0, batchSize)
+    const batchIds = new Set(batch.map(r => r.rowId))
+    const updated = current.map(r => batchIds.has(r.rowId) ? { ...r, status: 'in_batch' } : r)
 
-      setBatchRows(batch)
-      setStats(s => ({
-        ...s,
-        remaining: remaining.length,
-        inBatch: batch.length
-      }))
-      setBatchComplete(false)
-      if (batch.length > 0) {
-        setActiveTab(batch[0].rowId)
-      } else {
-        setIsComplete(true)
-        setBatchComplete(true)
-      }
-      return prev
-    })
+    setAllRows(updated)
+    allRowsRef.current = updated
+    setBatchRows(batch)
+    setStats(s => ({
+      ...s,
+      remaining: remaining.length,
+      inBatch: batch.length
+    }))
+    setBatchComplete(false)
+
+    if (batch.length > 0) {
+      setActiveTab(batch[0].rowId)
+      setSelectedLead(batch[0])
+    } else {
+      setIsComplete(true)
+      setBatchComplete(true)
+    }
   }, [batchSize])
 
   const handleGoHome = useCallback(() => {
@@ -299,7 +311,10 @@ function App() {
     setBatchSize(20)
     setStats({ total: 0, processed: 0, remaining: 0, inBatch: 0 })
     setBatchRows([])
+    setAllRows([])
+    allRowsRef.current = []
     setActiveTab(null)
+    setSelectedLead(null)
     setIsComplete(false)
     setBatchComplete(false)
     setIsAdditional(false)
@@ -345,7 +360,7 @@ function App() {
         company_phone: row.company_phone || '',
         email: row.email || '',
         pushed_by: pushedByName.trim(),
-        Comments: row.Comments || '',
+        comments: row.Comments || '',
         'Lead Status': row['Lead Status'] || ''
       })
       if (result.duplicate) {
@@ -374,6 +389,11 @@ function App() {
     return { success: true }
   }, [auth])
 
+  const handleAddFile = useCallback(() => {
+    setIsAdditional(true)
+    setView('landing')
+  }, [])
+
   const handleExport = useCallback(() => {
     const headers = ['name', 'query', 'website', 'company_phone', 'email', 'Lead Status', 'Comments']
     const data = allRows.filter(r => r.tag).map(r => {
@@ -397,13 +417,14 @@ function App() {
     addToast(`Exported ${data.length} leads`, 'success')
   }, [allRows, addToast])
 
-  const handleTabClick = useCallback((rowId) => {
+  const handleRowClick = useCallback((rowId) => {
     setActiveTab(rowId)
-    const row = batchRows.find(r => r.rowId === rowId)
+    const row = allRowsRef.current.find(r => r.rowId === rowId)
+    setSelectedLead(row || null)
     if (row && row.searchValue) {
       window.open(`https://www.google.com/search?q=${encodeURIComponent(row.searchValue)}`, '_blank')
     }
-  }, [batchRows])
+  }, [])
 
   const handleSaveScriptUrl = useCallback(() => {
     setScriptUrl(scriptUrlInput.trim())
@@ -424,7 +445,7 @@ function App() {
           <p className="app-subtitle">Lead Review Tool</p>
         </header>
         <main className="app-main">
-          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh', color: 'var(--muted)' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh', color: '#666' }}>
             Loading...
           </div>
         </main>
@@ -511,7 +532,7 @@ function App() {
             </div>
           </div>
         </main>
-        {showAddLead && <AddLeadModal onClose={() => { setShowAddLead(false); handleOpenMasterViewer() }} onAdd={handleAddLead} />}
+        {showAddLead && <AddLeadModal onClose={() => { setShowAddLead(false); if (isAdditional) { setView('batch'); setIsAdditional(false) } }} onAdd={handleAddLead} />}
         <ToastContainer />
       </div>
     )
@@ -697,6 +718,7 @@ function App() {
               </>
             )}
             <span className="separator">|</span>
+            <button className="btn btn-secondary btn-sm" onClick={handleAddFile}>+ Add File</button>
             <button className="btn btn-secondary btn-sm" onClick={handleExport}>Export</button>
             <span className="separator">|</span>
             <span className="header-username">{auth.displayName}</span>
@@ -704,11 +726,53 @@ function App() {
           </div>
         </header>
         <main className="app-main batch-view">
+          <div className="batch-content">
+            {selectedLead ? (
+              <div className="lead-detail-panel">
+                <h3 className="lead-detail-name">{selectedLead.name || 'No Name'}</h3>
+                <div className="lead-detail-fields">
+                  {selectedLead.query && (
+                    <div className="lead-detail-field">
+                      <span className="lead-detail-label">Query</span>
+                      <span className="lead-detail-value">{selectedLead.query}</span>
+                    </div>
+                  )}
+                  {selectedLead.website && (
+                    <div className="lead-detail-field">
+                      <span className="lead-detail-label">Website</span>
+                      <a className="lead-detail-value lead-detail-link" href={selectedLead.website.startsWith('http') ? selectedLead.website : `https://${selectedLead.website}`} target="_blank" rel="noopener noreferrer">{selectedLead.website}</a>
+                    </div>
+                  )}
+                  {selectedLead.company_phone && (
+                    <div className="lead-detail-field">
+                      <span className="lead-detail-label">Phone</span>
+                      <span className="lead-detail-value">{selectedLead.company_phone}</span>
+                    </div>
+                  )}
+                  {selectedLead.email && (
+                    <div className="lead-detail-field">
+                      <span className="lead-detail-label">Email</span>
+                      <span className="lead-detail-value">{selectedLead.email}</span>
+                    </div>
+                  )}
+                </div>
+                <div className="lead-detail-tag-actions">
+                  <button className={`lead-tag-btn lead-tag-good ${selectedLead.tag === 'green' ? 'active' : ''}`} onClick={() => handleTag(selectedLead.rowId, 'green')}>Good</button>
+                  <button className={`lead-tag-btn lead-tag-maybe ${selectedLead.tag === 'yellow' ? 'active' : ''}`} onClick={() => handleTag(selectedLead.rowId, 'yellow')}>Maybe</button>
+                  <button className={`lead-tag-btn lead-tag-bad ${selectedLead.tag === 'red' ? 'active' : ''}`} onClick={() => handleTag(selectedLead.rowId, 'red')}>Bad</button>
+                </div>
+              </div>
+            ) : (
+              <div className="batch-empty">
+                <p>Select a lead from the panel below to start reviewing</p>
+              </div>
+            )}
+          </div>
           <BottomBar
             batchRows={batchRows}
             stats={stats}
             activeRow={activeTab}
-            onRowClick={handleTabClick}
+            onRowClick={handleRowClick}
             onTag={handleTag}
             onNextBatch={handleNextBatch}
             onHome={handleGoHome}
@@ -723,6 +787,7 @@ function App() {
               <p>You have reviewed all {stats.total} leads.</p>
               <div className="completion-actions">
                 <button className="btn btn-primary" onClick={handleExport}>Export Results</button>
+                <button className="btn btn-secondary" onClick={handleAddFile}>Add Another File</button>
                 <button className="btn btn-secondary" onClick={handleGoHome}>Start New Session</button>
               </div>
             </div>

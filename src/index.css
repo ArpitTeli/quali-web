@@ -2738,4 +2738,126 @@ body {
 
 .batch-view {
   padding-bottom: 140px;
+  display: flex;
+  flex-direction: column;
+}
+
+.batch-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.batch-empty {
+  text-align: center;
+  color: #666;
+  font-size: 14px;
+}
+
+.lead-detail-panel {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 12px;
+  padding: 24px 32px;
+  max-width: 500px;
+  width: 100%;
+}
+
+.lead-detail-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: #fff;
+  margin: 0 0 16px 0;
+}
+
+.lead-detail-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.lead-detail-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.lead-detail-label {
+  font-size: 11px;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.lead-detail-value {
+  font-size: 13px;
+  color: #ccc;
+  word-break: break-all;
+}
+
+.lead-detail-link {
+  color: #4ade80;
+  text-decoration: none;
+}
+
+.lead-detail-link:hover {
+  text-decoration: underline;
+}
+
+.lead-detail-tag-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.lead-tag-btn {
+  flex: 1;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.15s;
+}
+
+.lead-tag-btn.lead-tag-good {
+  background: rgba(74,222,128,0.1);
+  color: #4ade80;
+  border-color: rgba(74,222,128,0.2);
+}
+
+.lead-tag-btn.lead-tag-good:hover,
+.lead-tag-btn.lead-tag-good.active {
+  background: #4ade80;
+  color: #000;
+  border-color: #4ade80;
+}
+
+.lead-tag-btn.lead-tag-maybe {
+  background: rgba(250,204,21,0.1);
+  color: #facc15;
+  border-color: rgba(250,204,21,0.2);
+}
+
+.lead-tag-btn.lead-tag-maybe:hover,
+.lead-tag-btn.lead-tag-maybe.active {
+  background: #facc15;
+  color: #000;
+  border-color: #facc15;
+}
+
+.lead-tag-btn.lead-tag-bad {
+  background: rgba(248,113,113,0.1);
+  color: #f87171;
+  border-color: rgba(248,113,113,0.2);
+}
+
+.lead-tag-btn.lead-tag-bad:hover,
+.lead-tag-btn.lead-tag-bad.active {
+  background: #f87171;
+  color: #000;
+  border-color: #f87171;
 }
