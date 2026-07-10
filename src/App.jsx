@@ -119,6 +119,12 @@ function App() {
           const pc = await api.getLeaderboard()
           if (pc && pc.pushCounts) setPushCounts(pc.pushCounts)
         } catch (e) { /* ignore */ }
+        if (auth.masterSheetId) {
+          try {
+            const stats = await api.getMasterStats(auth.masterSheetId)
+            if (stats && stats.totalLeads !== undefined) setMasterStats(stats)
+          } catch (e) { /* ignore */ }
+        }
         setActivities(storage.getActivities())
       }
       refresh()
