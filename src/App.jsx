@@ -1,0 +1,733 @@
+import React, { useState, useEffect, useCallback, useRef } from 'react'
+import * as XLSX from 'xlsx'
+import FilePicker from './components/FilePicker'
+import SetupView from './components/SetupView'
+import LoginView from './components/LoginView'
+import BottomBar from './components/BottomBar'
+import { useToast } from './components/Toast'
+import ActivitiesCard from './components/right-panel/ActivitiesCard'
+import TodoList from './components/right-panel/TodoList'
+import MasterCard from './components/right-panel/MasterCard'
+import CompetitionWidget from './components/right-panel/CompetitionWidget'
+import AddLeadModal from './components/AddLeadModal'
+import { FaBell } from 'react-icons/fa'
+import { X, FileText, BarChart3, CheckCircle, AlertCircle, XCircle, Calendar, Globe, Upload, Clock, Users } from 'lucide-react'
+import * as api from './services/api'
+import * as storage from './services/storage'
+
+function detectColumns(headers) {
+  const aliases = {
+    name: ['name', 'lead name', 'company name', 'business name', 'firm name', 'contact name'],
+    query: ['query', 'search', 'search term', 'search query'],
+    website: ['website', 'url', 'site', 'web', 'webpage'],
+    company_phone: ['company_phone', 'company phone', 'phone', 'telephone', 'contact number', 'mobile', 'phone number', 'cell', 'tel'],
+    email: ['email', 'e-mail', 'mail', 'contact email', 'email address']
+  }
+  const mapping = {}
+  const normalized = headers.map(h => ({ original: h, norm: String(h).toLowerCase().trim().replace(/[\s_-]+/g, ' ') }))
+  for (const [col, aliasList] of Object.entries(aliases)) {
+    const found = normalized.find(n => aliasList.some(a => n.norm === a || n.norm.includes(a)))
+    mapping[col] = found ? found.original : null
+  }
+  return mapping
+}
+
+function mapRowData(row, mapping) {
+  const mapped = {}
+  for (const [col, sourceCol] of Object.entries(mapping)) {
+    mapped[col] = sourceCol && row[sourceCol] != null ? String(row[sourceCol]).trim() : ''
+  }
+  return mapped
+}
+
+function normalizePhone(raw) {
+  if (!raw) return ''
+  let digits = String(raw).replace(/\D/g, '')
+  if (digits.length === 12 && digits.startsWith('91')) digits = digits.slice(2)
+  else if (digits.length === 13 && digits.startsWith('091')) digits = digits.slice(3)
+  else if (digits.length === 11 && digits.startsWith('0')) digits = digits.slice(1)
+  return digits.slice(-10)
+}
+
+let rowIdCounter = 0
+
+function App() {
+  const { addToast, ToastContainer } = useToast()
+  const [view, setView] = useState('landing')
+  const [auth, setAuth] = useState({ loggedIn: false, displayName: '', uid: '', masterSheetId: '' })
+  const [authLoading, setAuthLoading] = useState(true)
+
+  const [excelData, setExcelData] = useState(null)
+  const [columnMapping, setColumnMapping] = useState({})
+  const [batchSize, setBatchSize] = useState(20)
+  const [rowCount, setRowCount] = useState(0)
+  const [isAdditional, setIsAdditional] = useState(false)
+
+  const [allRows, setAllRows] = useState([])
+  const [batchRows, setBatchRows] = useState([])
+  const [stats, setStats] = useState({ total: 0, processed: 0, remaining: 0, inBatch: 0 })
+  const [activeTab, setActiveTab] = useState(null)
+  const [isComplete, setIsComplete] = useState(false)
+  const [batchComplete, setBatchComplete] = useState(false)
+  const [cloudMasterFiltered, setCloudMasterFiltered] = useState(0)
+
+  const [masterRows, setMasterRows] = useState([])
+  const [masterLoading, setMasterLoading] = useState(false)
+  const [masterStats, setMasterStats] = useState({ totalLeads: 0, good: 0, maybe: 0, bad: 0, lastModified: null })
+  const [pushCounts, setPushCounts] = useState({})
+  const [activities, setActivities] = useState([])
+  const [pushedByName, setPushedByName] = useState(storage.getPushedByName())
+  const [scriptUrl, setScriptUrl] = useState(storage.getScriptUrl())
+  const [scriptUrlInput, setScriptUrlInput] = useState(storage.getScriptUrl())
+  const [showAddLead, setShowAddLead] = useState(false)
+  const [selectedCommentRow, setSelectedCommentRow] = useState(null)
+  const [commentText, setCommentText] = useState('')
+  const commentTimerRef = useRef(null)
+  const [cloudMasterData, setCloudMasterData] = useState({ names: new Set(), phones: new Set() })
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const session = storage.getSession()
+      if (session && session.loggedIn) {
+        setAuth(session)
+        setPushedByName(session.displayName || storage.getPushedByName())
+      }
+      setAuthLoading(false)
+    }
+    checkAuth()
+  }, [])
+
+  useEffect(() => {
+    if (!auth.loggedIn) return
+    const loadCloudMaster = async () => {
+      try {
+        const result = await api.fetchCloudMaster()
+        if (result.taggedLeads) {
+          const names = new Set(result.taggedLeads.map(l => (l.name || '').toLowerCase().trim()))
+          const phones = new Set(result.taggedLeads.map(l => normalizePhone(l.phone)).filter(Boolean))
+          setCloudMasterData({ names, phones })
+        }
+      } catch (e) { /* ignore */ }
+    }
+    loadCloudMaster()
+  }, [auth.loggedIn])
+
+  useEffect(() => {
+    if (view === 'landing' && auth.loggedIn) {
+      const refresh = async () => {
+        try {
+          const pc = await api.getLeaderboard()
+          if (pc && pc.pushCounts) setPushCounts(pc.pushCounts)
+        } catch (e) { /* ignore */ }
+        setActivities(storage.getActivities())
+      }
+      refresh()
+    }
+  }, [view, auth.loggedIn])
+
+  const handleLogin = useCallback(async ({ uid, password }) => {
+    const result = await api.login(uid, password)
+    if (result.success) {
+      const session = { loggedIn: true, displayName: result.displayName, uid, masterSheetId: result.masterSheetId || '' }
+      setAuth(session)
+      setPushedByName(result.displayName)
+      storage.saveSession(session)
+      storage.savePushedByName(result.displayName)
+    }
+    return result
+  }, [])
+
+  const handleLogout = useCallback(() => {
+    storage.clearSession()
+    setAuth({ loggedIn: false, displayName: '', uid: '', masterSheetId: '' })
+    setPushedByName('')
+    setView('landing')
+  }, [])
+
+  const handleFileLoad = useCallback((data) => {
+    setExcelData(data.data)
+    setColumnMapping(data.columnMapping)
+    setRowCount(data.rowCount || 0)
+    setIsAdditional(false)
+    setView('setup')
+  }, [])
+
+  const handleSetupComplete = useCallback(async (setupData) => {
+    setColumnMapping(setupData.columnMapping)
+    setBatchSize(setupData.batchSize)
+
+    const sheet = excelData.sheets[setupData.sheetName]
+    if (!sheet) {
+      addToast('Failed to load sheet data', 'error')
+      return
+    }
+
+    const mapping = setupData.columnMapping
+    let rows = sheet.data.map((r, i) => ({
+      ...mapRowData(r, mapping),
+      rowId: `row-${++rowIdCounter}`,
+      tag: null,
+      status: 'unprocessed'
+    }))
+
+    let skippedByCloud = 0
+    if (cloudMasterData.names.size > 0 || cloudMasterData.phones.size > 0) {
+      const before = rows.length
+      rows = rows.filter(r => {
+        const name = (r.name || '').toLowerCase().trim()
+        const phone = normalizePhone(r.company_phone)
+        if (name && cloudMasterData.names.has(name)) return false
+        if (phone && cloudMasterData.phones.has(phone)) return false
+        return true
+      })
+      skippedByCloud = before - rows.length
+    }
+
+    if (skippedByCloud > 0) {
+      setCloudMasterFiltered(skippedByCloud)
+      addToast(`${skippedByCloud} lead(s) skipped — already tagged by others`, 'info')
+    } else {
+      setCloudMasterFiltered(0)
+    }
+
+    const newAllRows = isAdditional ? [...allRows, ...rows] : rows
+    setAllRows(newAllRows)
+
+    const processed = newAllRows.filter(r => r.status === 'processed' || r.tag).length
+    const remaining = newAllRows.filter(r => r.status === 'unprocessed').length
+    const batchSlice = newAllRows.filter(r => r.status === 'unprocessed').slice(0, setupData.batchSize)
+    batchSlice.forEach(r => { r.status = 'in_batch' })
+
+    const newStats = {
+      total: newAllRows.length,
+      processed,
+      remaining,
+      inBatch: batchSlice.length
+    }
+
+    setStats(newStats)
+    setBatchRows(batchSlice)
+    setIsComplete(remaining === 0)
+    setBatchComplete(false)
+
+    if (batchSlice.length > 0) {
+      setActiveTab(batchSlice[0].rowId)
+    }
+
+    setView('batch')
+
+    const act = [...storage.getActivities(), {
+      type: 'file',
+      title: 'File loaded',
+      desc: `${setupData.sheetName} — ${rows.length} leads`,
+      time: new Date().toISOString()
+    }]
+    storage.saveActivities(act)
+    setActivities(act)
+
+    addToast(`Loaded ${rows.length} leads${skedByCloud > 0 ? ` (${skedByCloud} skipped)` : ''}`, 'success')
+  }, [excelData, allRows, isAdditional, cloudMasterData, addToast])
+
+  const handleTag = useCallback(async (rowId, tag) => {
+    setBatchRows(prev => {
+      const updated = prev.map(r => r.rowId === rowId ? { ...r, tag, status: 'processed' } : r)
+      return updated
+    })
+    setAllRows(prev => prev.map(r => r.rowId === rowId ? { ...r, tag, status: 'processed' } : r))
+
+    const row = batchRows.find(r => r.rowId === rowId)
+    if (row) {
+      try {
+        await api.addTag({
+          name: row.name || '',
+          phone: row.company_phone || '',
+          taggedBy: auth.displayName || auth.uid,
+          tag
+        })
+      } catch (e) { /* fire and forget */ }
+
+      setCloudMasterData(prev => {
+        const names = new Set(prev.names)
+        const phones = new Set(prev.phones)
+        if (row.name) names.add(row.name.toLowerCase().trim())
+        const phone = normalizePhone(row.company_phone)
+        if (phone) phones.add(phone)
+        return { names, phones }
+      })
+    }
+
+    setStats(prev => ({
+      ...prev,
+      processed: prev.processed + 1,
+      remaining: prev.remaining - 1,
+    }))
+  }, [batchRows, auth])
+
+  const handleNextBatch = useCallback(() => {
+    setAllRows(prev => {
+      const remaining = prev.filter(r => r.status === 'unprocessed')
+      const batch = remaining.slice(0, batchSize)
+      batch.forEach(r => { r.status = 'in_batch' })
+
+      setBatchRows(batch)
+      setStats(s => ({
+        ...s,
+        remaining: remaining.length,
+        inBatch: batch.length
+      }))
+      setBatchComplete(false)
+      if (batch.length > 0) {
+        setActiveTab(batch[0].rowId)
+      } else {
+        setIsComplete(true)
+        setBatchComplete(true)
+      }
+      return prev
+    })
+  }, [batchSize])
+
+  const handleGoHome = useCallback(() => {
+    setView('landing')
+    setExcelData(null)
+    setColumnMapping({})
+    setBatchSize(20)
+    setStats({ total: 0, processed: 0, remaining: 0, inBatch: 0 })
+    setBatchRows([])
+    setActiveTab(null)
+    setIsComplete(false)
+    setBatchComplete(false)
+    setIsAdditional(false)
+    setCloudMasterFiltered(0)
+  }, [])
+
+  const handleOpenMasterViewer = useCallback(async () => {
+    setMasterLoading(true)
+    setView('master')
+    if (auth.masterSheetId) {
+      try {
+        const result = await api.readMasterSheet(auth.masterSheetId)
+        if (result.rows) {
+          setMasterRows(result.rows)
+        }
+      } catch (e) {
+        addToast('Failed to read master sheet', 'error')
+      }
+    }
+    setMasterLoading(false)
+  }, [auth, addToast])
+
+  const handleDiscard = useCallback(async (row) => {
+    if (auth.masterSheetId) {
+      try {
+        await api.discardMasterRow(auth.masterSheetId, `${row.name}|${row.website}`)
+      } catch (e) { /* ignore */ }
+    }
+    setMasterRows(prev => prev.filter(r => !(r.name === row.name && r.website === row.website)))
+    addToast('Lead discarded', 'info')
+  }, [auth, addToast])
+
+  const handlePush = useCallback(async (row) => {
+    if (!pushedByName.trim()) {
+      addToast('Enter your name before pushing', 'error')
+      return
+    }
+    try {
+      const result = await api.pushLead({
+        query: row.query || '',
+        name: row.name || '',
+        website: row.website || '',
+        company_phone: row.company_phone || '',
+        email: row.email || '',
+        pushed_by: pushedByName.trim(),
+        Comments: row.Comments || '',
+        'Lead Status': row['Lead Status'] || ''
+      })
+      if (result.duplicate) {
+        addToast(`"${row.name}" already exists in shared sheet — skipped`, 'info')
+      } else {
+        addToast('Lead pushed to shared sheet', 'success')
+      }
+    } catch (e) {
+      addToast('Push failed', 'error')
+      return
+    }
+
+    if (auth.masterSheetId) {
+      try {
+        await api.discardMasterRow(auth.masterSheetId, `${row.name}|${row.website}`)
+      } catch (e) { /* ignore */ }
+    }
+    setMasterRows(prev => prev.filter(r => !(r.name === row.name && r.website === row.website)))
+  }, [pushedByName, auth, addToast])
+
+  const handleAddLead = useCallback(async (data) => {
+    if (auth.masterSheetId) {
+      const result = await api.addMasterLead(auth.masterSheetId, data)
+      return result
+    }
+    return { success: true }
+  }, [auth])
+
+  const handleExport = useCallback(() => {
+    const headers = ['name', 'query', 'website', 'company_phone', 'email', 'Lead Status', 'Comments']
+    const data = allRows.filter(r => r.tag).map(r => {
+      const row = {}
+      for (const h of headers) {
+        row[h] = r[h] || ''
+      }
+      row['Lead Status'] = r.tag === 'green' ? 'Good' : r.tag === 'yellow' ? 'Maybe' : r.tag === 'red' ? 'Bad' : ''
+      return row
+    })
+
+    if (data.length === 0) {
+      addToast('No tagged leads to export', 'info')
+      return
+    }
+
+    const wb = XLSX.utils.book_new()
+    const ws = XLSX.utils.json_to_sheet(data, { header: headers })
+    XLSX.utils.book_append_sheet(wb, ws, 'Leads')
+    XLSX.writeFile(wb, `quali_export_${new Date().toISOString().slice(0, 10)}.xlsx`)
+    addToast(`Exported ${data.length} leads`, 'success')
+  }, [allRows, addToast])
+
+  const handleTabClick = useCallback((rowId) => {
+    setActiveTab(rowId)
+    const row = batchRows.find(r => r.rowId === rowId)
+    if (row && row.searchValue) {
+      window.open(`https://www.google.com/search?q=${encodeURIComponent(row.searchValue)}`, '_blank')
+    }
+  }, [batchRows])
+
+  const handleSaveScriptUrl = useCallback(() => {
+    setScriptUrl(scriptUrlInput.trim())
+    storage.saveScriptUrl(scriptUrlInput.trim())
+    addToast('Apps Script URL saved', 'success')
+  }, [scriptUrlInput, addToast])
+
+  const handleSaveName = useCallback((name) => {
+    setPushedByName(name)
+    storage.savePushedByName(name)
+  }, [])
+
+  if (authLoading) {
+    return (
+      <div className="app">
+        <header className="app-header">
+          <h1>Quali</h1>
+          <p className="app-subtitle">Lead Review Tool</p>
+        </header>
+        <main className="app-main">
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh', color: 'var(--muted)' }}>
+            Loading...
+          </div>
+        </main>
+      </div>
+    )
+  }
+
+  if (!auth.loggedIn) {
+    return (
+      <div className="app">
+        <LoginView onLogin={handleLogin} />
+        <ToastContainer />
+      </div>
+    )
+  }
+
+  if (view === 'landing') {
+    return (
+      <div className="app">
+        <header className="app-header">
+          <h1>Quali</h1>
+          <p className="app-subtitle">Lead Review Tool — Web</p>
+          <div className="header-user">
+            <span className="header-username">{auth.displayName}</span>
+            <button className="btn-logout" onClick={handleLogout}>Logout</button>
+          </div>
+        </header>
+        <main className="app-main landing-main">
+          <div className="landing-left">
+            <div className="landing-cards">
+              <MasterCard
+                icon={<FileText size={20} />}
+                title="My Master Sheet"
+                miniGraph="M2 18C15 15 25 5 45 8C65 11 70 2 78 2"
+                stats={[
+                  { icon: <FileText size={14} />, label: 'Sheet', value: <span className="mc-stat-text">{auth.masterSheetId ? 'Connected' : 'Not configured'}</span> },
+                  { icon: <BarChart3 size={14} />, label: 'Total Leads', value: <span className="mc-stat-bold">{masterStats.totalLeads}</span> },
+                  { icon: <CheckCircle size={14} />, label: 'Good', value: <span className="mc-stat-green">{masterStats.good}</span> },
+                  { icon: <AlertCircle size={14} />, label: 'Maybe', value: <span className="mc-stat-yellow">{masterStats.maybe}</span> },
+                  { icon: <XCircle size={14} />, label: 'Bad', value: <span className="mc-stat-red">{masterStats.bad}</span> },
+                ]}
+                actions={
+                  <div className="mc-btn-row">
+                    <button className="mc-btn mc-btn-primary" onClick={handleOpenMasterViewer}>View</button>
+                    <button className="mc-btn mc-btn-secondary" onClick={() => setShowAddLead(true)}>Add Lead</button>
+                  </div>
+                }
+              />
+              <MasterCard
+                icon={<Globe size={20} />}
+                title="Shared Master Sheet"
+                miniGraph="M2 12C18 8 35 18 55 10C70 5 75 14 78 8"
+                stats={[
+                  { icon: <Globe size={14} />, label: 'URL', value: <span className="mc-stat-text">Google Drive — all users</span> },
+                  { icon: <Upload size={14} />, label: 'Total Pushed', value: <span className="mc-stat-bold">—</span> },
+                  { icon: <Clock size={14} />, label: 'Last Push', value: <span className="mc-stat-text">—</span> },
+                  { icon: <Users size={14} />, label: 'Top Pusher', value: <span className="mc-stat-text">—</span> },
+                ]}
+                actions={
+                  <div className="mc-btn-row">
+                    <a className="mc-btn mc-btn-secondary" href="https://docs.google.com/spreadsheets/d/1LWsb7dfw5vQ3DZcLgmN523ALoys9hqYfmft6v-bA9kU/edit?usp=sharing" target="_blank" rel="noopener noreferrer">Open</a>
+                  </div>
+                }
+              />
+            </div>
+            <div className="landing-upload">
+              <FilePicker onFileLoad={handleFileLoad} />
+            </div>
+          </div>
+          <div className="landing-center">
+            <CompetitionWidget
+              data={Object.entries(pushCounts).map(([name, leads]) => ({ name, leads }))}
+            />
+          </div>
+          <div className="landing-right">
+            <ActivitiesCard
+              headerIcon={<FaBell size={22} />}
+              title="Notifications"
+              subtitle="Recent activity"
+              activities={activities}
+            />
+            <div className="landing-right-bottom">
+              <TodoList />
+            </div>
+          </div>
+        </main>
+        {showAddLead && <AddLeadModal onClose={() => { setShowAddLead(false); handleOpenMasterViewer() }} onAdd={handleAddLead} />}
+        <ToastContainer />
+      </div>
+    )
+  }
+
+  if (view === 'setup' && excelData) {
+    return (
+      <div className="app">
+        <header className="app-header">
+          <h1>Quali</h1>
+          <p className="app-subtitle">{isAdditional ? 'Add Another File' : 'Configure Review Session'}</p>
+        </header>
+        <main className="app-main">
+          <SetupView
+            excelData={excelData}
+            columnMapping={columnMapping}
+            rowCount={rowCount}
+            onComplete={handleSetupComplete}
+            onBack={() => {
+              if (isAdditional) {
+                setView('batch')
+                setIsAdditional(false)
+              } else {
+                setView('landing')
+              }
+            }}
+            isAdditional={isAdditional}
+          />
+        </main>
+        <ToastContainer />
+      </div>
+    )
+  }
+
+  if (view === 'master') {
+    return (
+      <div className="app">
+        <header className="app-header">
+          <h1>Quali</h1>
+          <p className="app-subtitle">Master Sheet</p>
+          <div className="header-user">
+            <span className="header-username">{auth.displayName}</span>
+            <button className="btn-logout" onClick={handleLogout}>Logout</button>
+          </div>
+        </header>
+        <main className="app-main master-view">
+          <div className="master-toolbar">
+            <button className="btn btn-secondary btn-sm" onClick={() => setView('landing')}>← Back</button>
+            <div className="master-toolbar-right">
+              <input
+                type="text"
+                className="master-name-input"
+                value={pushedByName}
+                onChange={(e) => handleSaveName(e.target.value)}
+                placeholder="Your name (for pushed_by)"
+              />
+              <span className="master-row-count">{masterRows.length} leads</span>
+              <button className="btn btn-primary btn-sm" onClick={() => setShowAddLead(true)}>+ Add Lead</button>
+            </div>
+          </div>
+          <div className="master-script-config">
+            <label>Apps Script URL (for Push to work)</label>
+            <div className="input-row">
+              <input
+                type="text"
+                value={scriptUrlInput}
+                onChange={(e) => setScriptUrlInput(e.target.value)}
+                placeholder="Paste your Google Apps Script web app URL"
+              />
+              <button className="btn btn-primary btn-sm" onClick={handleSaveScriptUrl} disabled={!scriptUrlInput.trim() || scriptUrlInput.trim() === scriptUrl}>
+                Save
+              </button>
+            </div>
+            {scriptUrl && <span className="settings-hint">URL configured</span>}
+          </div>
+          {masterLoading ? (
+            <div className="master-empty">Loading...</div>
+          ) : masterRows.length === 0 ? (
+            <div className="master-empty">No leads in master sheet</div>
+          ) : (
+            <div className="master-table-wrapper">
+              <table className="master-table">
+                <thead>
+                  <tr>
+                    <th>Candidate</th>
+                    <th>Query</th>
+                    <th>Website</th>
+                    <th>Phone</th>
+                    <th>Email</th>
+                    <th>Status</th>
+                    <th>Comments</th>
+                    <th className="text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {masterRows.map((row, i) => {
+                    const status = (row['Lead Status'] || '').toLowerCase()
+                    const statusLabel = status === 'green' ? 'Good' : status === 'yellow' ? 'Maybe' : status === 'red' ? 'Bad' : row['Lead Status'] || ''
+                    return (
+                      <tr key={i} style={{ cursor: 'pointer' }} onClick={() => { setSelectedCommentRow(row); setCommentText(row.Comments || '') }}>
+                        <td className="font-medium">{row.name || '—'}</td>
+                        <td className="text-muted">{row.query || '—'}</td>
+                        <td className="text-muted">{row.website || '—'}</td>
+                        <td className="text-muted">{row.company_phone || '—'}</td>
+                        <td className="text-muted">{row.email || '—'}</td>
+                        <td>
+                          {statusLabel ? (
+                            <span className={`badge badge-${status}`}>{statusLabel}</span>
+                          ) : (
+                            <span className="badge badge-muted">—</span>
+                          )}
+                        </td>
+                        <td className="text-muted">{row.Comments || '—'}</td>
+                        <td className="text-right">
+                          <button className="btn-discard" onClick={(e) => { e.stopPropagation(); handleDiscard(row) }} title="Discard">Discard</button>
+                          <button className="btn-push" onClick={(e) => { e.stopPropagation(); handlePush(row) }} title="Push to shared sheet">Push</button>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+              <div className="master-table-footer">
+                <span>Total Candidates</span>
+                <span>{masterRows.length}</span>
+              </div>
+            </div>
+          )}
+        </main>
+        {selectedCommentRow && (
+          <div className="comment-modal-overlay" onClick={() => setSelectedCommentRow(null)}>
+            <div className="comment-modal" onClick={e => e.stopPropagation()}>
+              <h3>{selectedCommentRow.name || 'Lead'}</h3>
+              <textarea
+                autoFocus
+                value={commentText}
+                onChange={(e) => {
+                  const val = e.target.value
+                  setCommentText(val)
+                  setMasterRows(prev => prev.map(r =>
+                    (r.name === selectedCommentRow.name && r.website === selectedCommentRow.website)
+                      ? { ...r, Comments: val }
+                      : r
+                  ))
+                  if (commentTimerRef.current) clearTimeout(commentTimerRef.current)
+                  commentTimerRef.current = setTimeout(() => {
+                    if (auth.masterSheetId) {
+                      api.updateMasterRow(auth.masterSheetId, `${selectedCommentRow.name}|${selectedCommentRow.website}`, 'Comments', val)
+                    }
+                  }, 500)
+                }}
+                placeholder="Add comments..."
+              />
+              <div className="comment-modal-actions">
+                <button className="btn btn-secondary btn-sm" onClick={() => setSelectedCommentRow(null)}>Close</button>
+              </div>
+            </div>
+          </div>
+        )}
+        {showAddLead && <AddLeadModal onClose={() => { setShowAddLead(false); handleOpenMasterViewer() }} onAdd={handleAddLead} />}
+        <ToastContainer />
+      </div>
+    )
+  }
+
+  if (view === 'batch') {
+    const taggedCount = batchRows.filter(r => r.tag).length
+    const allTagged = batchRows.length > 0 && taggedCount === batchRows.length
+    const hasUnprocessed = allRows.some(r => r.status === 'unprocessed')
+
+    return (
+      <div className="app">
+        <header className="app-header">
+          <h1>Quali</h1>
+          <div className="stats-bar">
+            <span>{stats.processed} / {stats.total} reviewed</span>
+            <span className="separator">|</span>
+            <span>{stats.remaining} remaining</span>
+            {cloudMasterFiltered > 0 && (
+              <>
+                <span className="separator">|</span>
+                <span style={{ color: '#a78bfa' }}>{cloudMasterFiltered} filtered (cloud dedup)</span>
+              </>
+            )}
+            <span className="separator">|</span>
+            <button className="btn btn-secondary btn-sm" onClick={handleExport}>Export</button>
+            <span className="separator">|</span>
+            <span className="header-username">{auth.displayName}</span>
+            <button className="btn-logout" onClick={handleLogout}>Logout</button>
+          </div>
+        </header>
+        <main className="app-main batch-view">
+          <BottomBar
+            batchRows={batchRows}
+            stats={stats}
+            activeRow={activeTab}
+            onRowClick={handleTabClick}
+            onTag={handleTag}
+            onNextBatch={handleNextBatch}
+            onHome={handleGoHome}
+            allTagged={allTagged}
+            hasUnprocessed={hasUnprocessed}
+          />
+        </main>
+        {isComplete && (
+          <div className="completion-overlay">
+            <div className="completion-card">
+              <h2>All Leads Reviewed!</h2>
+              <p>You have reviewed all {stats.total} leads.</p>
+              <div className="completion-actions">
+                <button className="btn btn-primary" onClick={handleExport}>Export Results</button>
+                <button className="btn btn-secondary" onClick={handleGoHome}>Start New Session</button>
+              </div>
+            </div>
+          </div>
+        )}
+        <ToastContainer />
+      </div>
+    )
+  }
+
+  return null
+}
+
+export default App

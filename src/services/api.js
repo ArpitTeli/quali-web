@@ -1,0 +1,81 @@
+const AUTH_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyhkpWsu7OoZrYFdAZxJZ74h0HYp0EkzNP21iCID9UHQBGc-Ugchx3m6M60GkTgDv8dtQ/exec'
+const CLOUD_MASTER_URL = 'https://script.google.com/macros/s/AKfycbzzdnjM8crblZhT7Fpw_yoRpS465ZGV9pRGJEkiFad0FB4lEfh_u3FY9Oi4ze683TgB6A/exec'
+const PUSH_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbykxuCQoi6WnnTXKdid4Ql6mwET2C68sMKZCvh7frIcGz5Wxe5lW8YR6c7Yo2s1qhPx/exec'
+
+async function post(url, body) {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify(body)
+  })
+  const text = await res.text()
+  try { return JSON.parse(text) } catch { return { raw: text } }
+}
+
+export async function login(uid, password) {
+  return post(AUTH_SCRIPT_URL, { action: 'login', uid, password })
+}
+
+export async function fetchCloudMaster() {
+  return post(CLOUD_MASTER_URL, { action: 'getTaggedNames' })
+}
+
+export async function addTag({ name, phone, taggedBy, tag }) {
+  return post(CLOUD_MASTER_URL, { action: 'addTag', name, phone, taggedBy, tag })
+}
+
+export async function readMasterSheet(sheetId) {
+  return post(sheetId ? `https://script.google.com/macros/s/AKfycbzzdnjM8crblZhT7Fpw_yoRpS465ZGV9pRGJEkiFad0FB4lEfh_u3FY9Oi4ze683TgB6A/exec` : CLOUD_MASTER_URL, {
+    action: 'readMaster',
+    sheetId
+  })
+}
+
+export async function updateMasterRow(sheetId, rowKey, field, value) {
+  return post(CLOUD_MASTER_URL, {
+    action: 'updateMasterRow',
+    sheetId,
+    rowKey,
+    field,
+    value
+  })
+}
+
+export async function discardMasterRow(sheetId, rowKey) {
+  return post(CLOUD_MASTER_URL, {
+    action: 'discardMasterRow',
+    sheetId,
+    rowKey
+  })
+}
+
+export async function addMasterLead(sheetId, row) {
+  return post(CLOUD_MASTER_URL, {
+    action: 'addMasterLead',
+    sheetId,
+    row
+  })
+}
+
+export async function pushLead(data) {
+  return post(PUSH_SCRIPT_URL, data)
+}
+
+export async function getLeaderboard() {
+  return post(PUSH_SCRIPT_URL, { action: 'leaderboard' })
+}
+
+export async function cloudMasterDebug() {
+  return post(CLOUD_MASTER_URL, { action: 'getTaggedNames' })
+}
+
+function normalizePhone(raw) {
+  if (!raw) return ''
+  let digits = String(raw).replace(/\D/g, '')
+  if (digits.length === 12 && digits.startsWith('91')) digits = digits.slice(2)
+  else if (digits.length === 13 && digits.startsWith('091')) digits = digits.slice(3)
+  else if (digits.length === 11 && digits.startsWith('0')) digits = digits.slice(1)
+  return digits.slice(-10)
+}
+
+export { CLOUD_MASTER_URL, AUTH_SCRIPT_URL, PUSH_SCRIPT_URL, normalizePhone }
