@@ -60,20 +60,20 @@ function updateMasterRow(sheetId, rowKey, field, value) {
   var data = sheet.getDataRange().getValues()
   if (data.length < 2) return { error: 'Empty sheet' }
 
-  var headers = data[0].map(function(h) { return String(h).trim() })
+  var headers = data[0].map(function(h) { return String(h).trim().toLowerCase() })
   var nameIdx = headers.indexOf('name')
   var websiteIdx = headers.indexOf('website')
-  var fieldIdx = headers.indexOf(field)
+  var fieldIdx = headers.indexOf(field.toLowerCase())
 
   if (fieldIdx === -1) return { error: 'Column not found: ' + field }
 
   var parts = rowKey.split('|')
-  var keyName = parts[0] || ''
-  var keyWebsite = parts[1] || ''
+  var keyName = (parts[0] || '').trim().toLowerCase()
+  var keyWebsite = (parts[1] || '').trim().toLowerCase()
 
   for (var i = 1; i < data.length; i++) {
-    var rowName = String(data[i][nameIdx] || '').trim()
-    var rowWebsite = String(data[i][websiteIdx] || '').trim()
+    var rowName = String(data[i][nameIdx] || '').trim().toLowerCase()
+    var rowWebsite = String(data[i][websiteIdx] || '').trim().toLowerCase()
     if (rowName === keyName && rowWebsite === keyWebsite) {
       sheet.getRange(i + 1, fieldIdx + 1).setValue(value)
       return { success: true }
@@ -91,24 +91,28 @@ function discardMasterRow(sheetId, rowKey) {
   var data = sheet.getDataRange().getValues()
   if (data.length < 2) return { error: 'Empty sheet' }
 
-  var headers = data[0].map(function(h) { return String(h).trim() })
+  var headers = data[0].map(function(h) { return String(h).trim().toLowerCase() })
   var nameIdx = headers.indexOf('name')
   var websiteIdx = headers.indexOf('website')
 
+  if (nameIdx === -1 || websiteIdx === -1) {
+    return { error: 'Columns not found. Headers: ' + JSON.stringify(data[0]) }
+  }
+
   var parts = rowKey.split('|')
-  var keyName = parts[0] || ''
-  var keyWebsite = parts[1] || ''
+  var keyName = (parts[0] || '').trim().toLowerCase()
+  var keyWebsite = (parts[1] || '').trim().toLowerCase()
 
   for (var i = 1; i < data.length; i++) {
-    var rowName = String(data[i][nameIdx] || '').trim()
-    var rowWebsite = String(data[i][websiteIdx] || '').trim()
+    var rowName = String(data[i][nameIdx] || '').trim().toLowerCase()
+    var rowWebsite = String(data[i][websiteIdx] || '').trim().toLowerCase()
     if (rowName === keyName && rowWebsite === keyWebsite) {
       sheet.deleteRow(i + 1)
       return { success: true }
     }
   }
 
-  return { error: 'Row not found' }
+  return { error: 'Row not found. Key: ' + rowKey + ' Headers: ' + JSON.stringify(data[0]) }
 }
 
 function addMasterLead(sheetId, row) {
