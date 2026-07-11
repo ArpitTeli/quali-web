@@ -1,9 +1,9 @@
-const AUTH_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyhkpWsu7OoZrYFdAZxJZ74h0HYp0EkzNP21iCID9UHQBGc-Ugchx3m6M60GkTgDv8dtQ/exec'
+const AUTH_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbybcZPeJ2267g0Xj9TR4Qc_KZwLznZE8WNnKuTmochMHShq-e-76zvQHGSsCt1T6_Xu0A/exec'
 const CLOUD_MASTER_URL = 'https://script.google.com/macros/s/AKfycbzzdnjM8crblZhT7Fpw_yoRpS465ZGV9pRGJEkiFad0FB4lEfh_u3FY9Oi4ze683TgB6A/exec'
 const PUSH_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbykxuCQoi6WnnTXKdid4Ql6mwET2C68sMKZCvh7frIcGz5Wxe5lW8YR6c7Yo2s1qhPx/exec'
 
-// Per-user master sheet Apps Script — deploy APPS_SCRIPT_PER_USER_MASTER.js and paste URL here
-const MASTER_SCRIPT_URL = 'YOUR_MASTER_SCRIPT_URL_HERE'
+// Per-user master sheet Apps Script
+const MASTER_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyAsMITtnXTGM9az0uhP9OgwnzqZql1ptKMOWtxC-w8vfVHNC6RgPt983DEFoQcTWk4/exec'
 
 async function post(url, body) {
   const res = await fetch(url, {
