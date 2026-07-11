@@ -114,11 +114,6 @@ body {
   padding: 12px 20px 20px;
 }
 
-.batch-view {
-  display: flex;
-  flex-direction: column;
-}
-
 .tab-content {
   flex: 1;
 }
@@ -1689,13 +1684,6 @@ body {
 
 .master-script-config .input-row input {
   font-size: 12px;
-}
-
-.master-empty {
-  text-align: center;
-  padding: 60px 20px;
-  color: #666;
-  font-size: 14px;
 }
 
 .master-table-wrapper {

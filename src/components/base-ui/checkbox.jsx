@@ -4,14 +4,13 @@ import { cn } from '../../lib/utils'
 export function Checkbox({ className, checked, onCheckedChange, 'aria-checked': ariaChecked, ...props }) {
   const [internalChecked, setInternalChecked] = useState(checked || false)
   const isMixed = ariaChecked === 'mixed'
+  const isChecked = checked !== undefined ? checked : internalChecked
 
   const handleChange = (e) => {
     const next = !isChecked
     setInternalChecked(next)
     if (onCheckedChange) onCheckedChange(next)
   }
-
-  const isChecked = checked !== undefined ? checked : internalChecked
 
   return (
     <button
