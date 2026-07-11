@@ -4,33 +4,15 @@ import { Card, CardContent, CardHeader } from './base-ui/card'
 import { Button } from './base-ui/button'
 import { Badge } from './base-ui/badge'
 import { cn } from '../lib/utils'
-
-function detectColumns(headers) {
-  const aliases = {
-    name: ['name', 'lead name', 'company name', 'business name', 'firm name', 'contact name'],
-    query: ['query', 'search', 'search term', 'search query'],
-    website: ['website', 'url', 'site', 'web', 'webpage'],
-    company_phone: ['company_phone', 'company phone', 'phone', 'telephone', 'contact number', 'mobile', 'phone number', 'cell', 'tel'],
-    email: ['email', 'e-mail', 'mail', 'contact email', 'email address']
-  }
-  const mapping = {}
-  const normalized = headers.map(h => ({ original: h, norm: String(h).toLowerCase().trim().replace(/[\s_-]+/g, ' ') }))
-  for (const [col, aliasList] of Object.entries(aliases)) {
-    const found = normalized.find(n => aliasList.some(a => n.norm === a || n.norm.includes(a)))
-    mapping[col] = found ? found.original : null
-  }
-  return mapping
-}
+import { detectColumns } from '../lib/excel'
 
 function FilePicker({ onFileLoad }) {
   const [isDragging, setIsDragging] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState(null)
   const [loadedFile, setLoadedFile] = useState(null)
   const fileInputRef = useRef(null)
 
   const processFile = useCallback(async (file) => {
-    setIsLoading(true)
     setError(null)
     try {
       const data = await file.arrayBuffer()
@@ -60,8 +42,6 @@ function FilePicker({ onFileLoad }) {
       })
     } catch (err) {
       setError(err.message || 'Failed to parse Excel file')
-    } finally {
-      setIsLoading(false)
     }
   }, [onFileLoad])
 

@@ -14,14 +14,7 @@ import { FaBell } from 'react-icons/fa'
 import { X, FileText, BarChart3, CheckCircle, AlertCircle, XCircle, Globe, Upload, Clock, Users } from 'lucide-react'
 import * as api from './services/api'
 import * as storage from './services/storage'
-
-function mapRowData(row, mapping) {
-  const mapped = {}
-  for (const [col, sourceCol] of Object.entries(mapping)) {
-    mapped[col] = sourceCol && row[sourceCol] != null ? String(row[sourceCol]).trim() : ''
-  }
-  return mapped
-}
+import { detectColumns, mapRowData } from './lib/excel'
 
 function normalizePhone(raw) {
   if (!raw) return ''
@@ -53,7 +46,6 @@ function App() {
   const [stats, setStats] = useState({ total: 0, processed: 0, remaining: 0, inBatch: 0 })
   const [activeTab, setActiveTab] = useState(null)
   const [isComplete, setIsComplete] = useState(false)
-  const [batchComplete, setBatchComplete] = useState(false)
   const [cloudMasterFiltered, setCloudMasterFiltered] = useState(0)
 
   const [masterRows, setMasterRows] = useState([])
@@ -227,7 +219,6 @@ function App() {
       })
       setBatchRows(batchSlice)
       setIsComplete(remaining === 0)
-      setBatchComplete(false)
 
       if (batchSlice.length > 0) {
         setActiveTab(batchSlice[0].rowId)
@@ -302,7 +293,7 @@ function App() {
       const totalDone = newProcessed
       const totalRows = prev.total
       if (totalDone >= totalRows) {
-        setTimeout(() => setIsComplete(true), 0)
+        setTimeout(() => setIsComplete(true), 300)
       }
       return {
         ...prev,
@@ -328,14 +319,12 @@ function App() {
       remaining: remaining.length,
       inBatch: batch.length
     }))
-    setBatchComplete(false)
 
     if (batch.length > 0) {
       setActiveTab(batch[0].rowId)
       setSelectedLead(batch[0])
     } else {
       setIsComplete(true)
-      setBatchComplete(true)
     }
   }, [batchSize])
 
@@ -352,7 +341,6 @@ function App() {
     setActiveTab(null)
     setSelectedLead(null)
     setIsComplete(false)
-    setBatchComplete(false)
     setIsAdditional(false)
     setCloudMasterFiltered(0)
   }, [])

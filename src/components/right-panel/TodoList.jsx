@@ -7,6 +7,7 @@ import { Input } from '../base-ui/input'
 import { Label } from '../base-ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../base-ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../base-ui/table'
+import * as storage from '../../services/storage'
 
 const defaultFilters = {
   client: '',
@@ -17,19 +18,6 @@ const priorityBadgeClass = {
   'High': 'badge-red',
   'Medium': 'badge-yellow',
   'Low': 'badge-green',
-}
-
-function loadTodos() {
-  try {
-    const raw = localStorage.getItem('quali_todos')
-    return raw ? JSON.parse(raw) : []
-  } catch { return [] }
-}
-
-function saveTodos(todos) {
-  try {
-    localStorage.setItem('quali_todos', JSON.stringify(todos))
-  } catch { /* ignore */ }
 }
 
 export default function TodoList() {
@@ -43,13 +31,13 @@ export default function TodoList() {
   const initialLoadDone = useRef(false)
 
   useEffect(() => {
-    setItems(loadTodos())
+    setItems(storage.getTodos())
     initialLoadDone.current = true
   }, [])
 
   useEffect(() => {
     if (!initialLoadDone.current) return
-    saveTodos(items)
+    storage.saveTodos(items)
   }, [items])
 
   const addItem = () => {
