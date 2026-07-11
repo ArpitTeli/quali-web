@@ -148,87 +148,101 @@ function App() {
   }, [])
 
   const handleSetupComplete = useCallback(async (setupData) => {
-    setColumnMapping(setupData.columnMapping)
-    setBatchSize(setupData.batchSize)
+    try {
+      setColumnMapping(setupData.columnMapping)
+      setBatchSize(setupData.batchSize)
 
-    const sheet = excelData.sheets[setupData.sheetName]
-    if (!sheet) {
-      addToast('Failed to load sheet data', 'error')
-      return
-    }
-
-    const mapping = setupData.columnMapping
-    const newRows = sheet.data.map((r) => {
-      const mapped = mapRowData(r, mapping)
-      return {
-        ...mapped,
-        searchValue: mapped.name || '',
-        rowId: `row-${++rowIdCounter}`,
-        tag: null,
-        status: 'unprocessed'
+      const currentExcelData = excelData
+      console.log('[SetupComplete]', { sheetName: setupData.sheetName, hasExcelData: !!currentExcelData, batchSize: setupData.batchSize })
+      if (!currentExcelData) {
+        addToast('No file loaded — try uploading again', 'error')
+        return
       }
-    })
 
-    let rows = newRows
-    let skippedByCloud = 0
-    if (cloudMasterData.names.size > 0 || cloudMasterData.phones.size > 0) {
-      const before = rows.length
-      rows = rows.filter(r => {
-        const name = (r.name || '').toLowerCase().trim()
-        const phone = normalizePhone(r.company_phone)
-        if (name && cloudMasterData.names.has(name)) return false
-        if (phone && cloudMasterData.phones.has(phone)) return false
-        return true
+      const sheet = currentExcelData.sheets[setupData.sheetName]
+      console.log('[SetupComplete]', { hasSheet: !!sheet, sheetKeys: Object.keys(currentExcelData.sheets) })
+      if (!sheet) {
+        addToast('Failed to load sheet data', 'error')
+        return
+      }
+
+      const mapping = setupData.columnMapping
+      console.log('[SetupComplete]', { mapping, dataCount: sheet.data.length })
+      const newRows = sheet.data.map((r) => {
+        const mapped = mapRowData(r, mapping)
+        return {
+          ...mapped,
+          searchValue: mapped.name || '',
+          rowId: `row-${++rowIdCounter}`,
+          tag: null,
+          status: 'unprocessed'
+        }
       })
-      skippedByCloud = before - rows.length
+
+      let rows = newRows
+      let skippedByCloud = 0
+      if (cloudMasterData.names.size > 0 || cloudMasterData.phones.size > 0) {
+        const before = rows.length
+        rows = rows.filter(r => {
+          const name = (r.name || '').toLowerCase().trim()
+          const phone = normalizePhone(r.company_phone)
+          if (name && cloudMasterData.names.has(name)) return false
+          if (phone && cloudMasterData.phones.has(phone)) return false
+          return true
+        })
+        skippedByCloud = before - rows.length
+      }
+
+      if (skedByCloud > 0) {
+        setCloudMasterFiltered(skedByCloud)
+        addToast(`${skedByCloud} lead(s) skipped — already tagged by others`, 'info')
+      } else {
+        setCloudMasterFiltered(0)
+      }
+
+      const existingRows = isAdditional ? allRowsRef.current : []
+      const combinedRows = [...existingRows, ...rows]
+      const batchSlice = combinedRows.filter(r => r.status === 'unprocessed').slice(0, setupData.batchSize)
+      const batchIds = new Set(batchSlice.map(r => r.rowId))
+      const updatedAllRows = combinedRows.map(r => batchIds.has(r.rowId) ? { ...r, status: 'in_batch' } : r)
+
+      setAllRows(updatedAllRows)
+      allRowsRef.current = updatedAllRows
+
+      const processed = updatedAllRows.filter(r => r.status === 'processed' || r.tag).length
+      const remaining = updatedAllRows.filter(r => r.status === 'unprocessed').length
+
+      setStats({
+        total: updatedAllRows.length,
+        processed,
+        remaining,
+        inBatch: batchSlice.length
+      })
+      setBatchRows(batchSlice)
+      setIsComplete(remaining === 0)
+      setBatchComplete(false)
+
+      if (batchSlice.length > 0) {
+        setActiveTab(batchSlice[0].rowId)
+        setSelectedLead(batchSlice[0])
+      }
+
+      setView('batch')
+
+      const act = [...storage.getActivities(), {
+        type: 'file',
+        title: 'File loaded',
+        desc: `${setupData.sheetName} — ${rows.length} leads`,
+        time: new Date().toISOString()
+      }]
+      storage.saveActivities(act)
+      setActivities(act)
+
+      addToast(`Loaded ${rows.length} leads${skedByCloud > 0 ? ` (${skedByCloud} skipped)` : ''}`, 'success')
+    } catch (err) {
+      console.error('Setup failed:', err)
+      addToast('Setup failed: ' + (err.message || err), 'error')
     }
-
-    if (skedByCloud > 0) {
-      setCloudMasterFiltered(skedByCloud)
-      addToast(`${skedByCloud} lead(s) skipped — already tagged by others`, 'info')
-    } else {
-      setCloudMasterFiltered(0)
-    }
-
-    const existingRows = isAdditional ? allRowsRef.current : []
-    const combinedRows = [...existingRows, ...rows]
-    const batchSlice = combinedRows.filter(r => r.status === 'unprocessed').slice(0, setupData.batchSize)
-    const batchIds = new Set(batchSlice.map(r => r.rowId))
-    const updatedAllRows = combinedRows.map(r => batchIds.has(r.rowId) ? { ...r, status: 'in_batch' } : r)
-
-    setAllRows(updatedAllRows)
-    allRowsRef.current = updatedAllRows
-
-    const processed = updatedAllRows.filter(r => r.status === 'processed' || r.tag).length
-    const remaining = updatedAllRows.filter(r => r.status === 'unprocessed').length
-
-    setStats({
-      total: updatedAllRows.length,
-      processed,
-      remaining,
-      inBatch: batchSlice.length
-    })
-    setBatchRows(batchSlice)
-    setIsComplete(remaining === 0)
-    setBatchComplete(false)
-
-    if (batchSlice.length > 0) {
-      setActiveTab(batchSlice[0].rowId)
-      setSelectedLead(batchSlice[0])
-    }
-
-    setView('batch')
-
-    const act = [...storage.getActivities(), {
-      type: 'file',
-      title: 'File loaded',
-      desc: `${setupData.sheetName} — ${rows.length} leads`,
-      time: new Date().toISOString()
-    }]
-    storage.saveActivities(act)
-    setActivities(act)
-
-    addToast(`Loaded ${rows.length} leads${skedByCloud > 0 ? ` (${skedByCloud} skipped)` : ''}`, 'success')
   }, [excelData, isAdditional, cloudMasterData, addToast])
 
   const handleTag = useCallback(async (rowId, tag) => {

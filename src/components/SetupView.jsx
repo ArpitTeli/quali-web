@@ -56,6 +56,7 @@ function SetupView({ excelData, columnMapping: initialMapping, rowCount: maxRows
   }, [columnMapping])
 
   const handleSubmit = useCallback(async () => {
+    console.log('[SetupView] handleSubmit called', { selectedSheet, hasName: !!columnMapping.name, isLoading })
     if (!selectedSheet || !columnMapping.name || isLoading) return
     setIsLoading(true)
     try {
@@ -64,6 +65,8 @@ function SetupView({ excelData, columnMapping: initialMapping, rowCount: maxRows
         columnMapping,
         batchSize: parseInt(batchSize, 10) || 20
       })
+    } catch (err) {
+      console.error('[SetupView] onComplete error:', err)
     } finally {
       setIsLoading(false)
     }
