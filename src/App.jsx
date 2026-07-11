@@ -384,10 +384,16 @@ function App() {
       return
     }
     try {
-      await api.discardMasterRow(auth.masterSheetId, `${row.name}|${row.website}`)
-    } catch (e) { /* ignore */ }
-    setMasterRows(prev => prev.filter(r => !(r.name === row.name && r.website === row.website)))
-    addToast('Lead discarded', 'info')
+      const result = await api.discardMasterRow(auth.masterSheetId, `${row.name}|${row.website}`)
+      if (result.error) {
+        addToast('Discard failed: ' + result.error, 'error')
+        return
+      }
+      setMasterRows(prev => prev.filter(r => !(r.name === row.name && r.website === row.website)))
+      addToast('Lead discarded', 'info')
+    } catch (e) {
+      addToast('Discard failed — network error', 'error')
+    }
   }, [auth, addToast])
 
   const handlePush = useCallback(async (row) => {
