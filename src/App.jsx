@@ -457,7 +457,14 @@ function App() {
     const row = allRowsRef.current.find(r => r.rowId === rowId)
     setSelectedLead(row || null)
     if (row && row.searchValue) {
-      window.open(`https://www.google.com/search?q=${encodeURIComponent(row.searchValue)}&_t=${Date.now()}`, '_blank')
+      const url = `https://www.google.com/search?q=${encodeURIComponent(row.searchValue)}&_t=${Date.now()}`
+      const a = document.createElement('a')
+      a.href = url
+      a.target = '_blank'
+      a.rel = 'noopener noreferrer'
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
     }
   }, [])
 
