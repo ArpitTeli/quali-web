@@ -3,7 +3,7 @@ const CLOUD_MASTER_URL = 'https://script.google.com/macros/s/AKfycbzzdnjM8crblZh
 const PUSH_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbykxuCQoi6WnnTXKdid4Ql6mwET2C68sMKZCvh7frIcGz5Wxe5lW8YR6c7Yo2s1qhPx/exec'
 
 // Per-user master sheet Apps Script
-const MASTER_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbygF6-W6kYG9uygSuIVY9dH8GBzCCXtQ7_xg-vQHw_k3yrm6w7w-2AgZxFWWlZooV2a/exec'
+const MASTER_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwz_DuKuWQjILllVBAUeNjMEUwJf5PqI2MVkT2oPvpCifYgKIqTpqDDWYPPU1GVtUCx/exec'
 
 async function post(url, body) {
   const res = await fetch(url, {
