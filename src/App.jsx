@@ -403,7 +403,7 @@ function App() {
         company_phone: normalizePhone(row.company_phone),
         email: row.email || '',
         pushed_by: pushedByName.trim(),
-        comments: row.Comments || '',
+        Comments: row.Comments || '',
         'Lead Status': row['Lead Status'] || ''
       })
       if (result.duplicate) {
