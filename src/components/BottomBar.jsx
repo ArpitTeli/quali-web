@@ -26,10 +26,10 @@ function BottomBar({ batchRows, stats, activeRow, onRowClick, onTag, onNextBatch
           <div
             key={row.rowId}
             className={`bottom-bar-row ${row.tag ? 'tagged' : ''} ${row.tag || ''} ${activeRow === row.rowId ? 'active' : ''}`}
+            onClick={() => onRowClick(row.rowId)}
           >
             <span
               className="bottom-bar-row-name"
-              onClick={() => onRowClick(row.rowId)}
               title={row.searchValue}
             >
               {row.searchValue || 'No data'}
@@ -37,19 +37,19 @@ function BottomBar({ batchRows, stats, activeRow, onRowClick, onTag, onNextBatch
             <div className="bottom-bar-row-actions">
               <button
                 className={`tag-btn green ${row.tag === 'green' ? 'active' : ''}`}
-                onClick={() => onTag(row.rowId, 'green')}
+                onClick={(e) => { e.stopPropagation(); onTag(row.rowId, 'green') }}
               >
                 Good
               </button>
               <button
                 className={`tag-btn yellow ${row.tag === 'yellow' ? 'active' : ''}`}
-                onClick={() => onTag(row.rowId, 'yellow')}
+                onClick={(e) => { e.stopPropagation(); onTag(row.rowId, 'yellow') }}
               >
                 Maybe
               </button>
               <button
                 className={`tag-btn red ${row.tag === 'red' ? 'active' : ''}`}
-                onClick={() => onTag(row.rowId, 'red')}
+                onClick={(e) => { e.stopPropagation(); onTag(row.rowId, 'red') }}
               >
                 Bad
               </button>

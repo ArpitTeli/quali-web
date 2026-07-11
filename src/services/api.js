@@ -61,10 +61,10 @@ export async function cloudMasterDebug() {
 
 function normalizePhone(raw) {
   if (!raw) return ''
-  let digits = String(raw).replace(/\D/g, '')
-  if (digits.length === 12 && digits.startsWith('91')) digits = digits.slice(2)
-  else if (digits.length === 13 && digits.startsWith('091')) digits = digits.slice(3)
-  else if (digits.length === 11 && digits.startsWith('0')) digits = digits.slice(1)
+  let str = String(raw).trim()
+  if (str.startsWith('+91')) str = str.slice(3)
+  let digits = str.replace(/\D/g, '')
+  if (digits.length === 11 && digits.startsWith('0')) digits = digits.slice(1)
   return digits.slice(-10)
 }
 

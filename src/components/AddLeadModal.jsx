@@ -1,5 +1,14 @@
 import React, { useState } from 'react'
 
+function normalizePhone(raw) {
+  if (!raw) return ''
+  let str = String(raw).trim()
+  if (str.startsWith('+91')) str = str.slice(3)
+  let digits = str.replace(/\D/g, '')
+  if (digits.length === 11 && digits.startsWith('0')) digits = digits.slice(1)
+  return digits.slice(-10)
+}
+
 function AddLeadModal({ onClose, onAdd }) {
   const [form, setForm] = useState({ name: '', website: '', company_phone: '', email: '', query: '' })
   const [error, setError] = useState('')
@@ -22,7 +31,7 @@ function AddLeadModal({ onClose, onAdd }) {
       const result = await onAdd({
         name: form.name.trim(),
         website: form.website.trim(),
-        company_phone: form.company_phone.trim(),
+        company_phone: normalizePhone(form.company_phone),
         email: form.email.trim(),
         query: form.query.trim()
       })

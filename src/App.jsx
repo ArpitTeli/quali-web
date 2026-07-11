@@ -25,10 +25,10 @@ function mapRowData(row, mapping) {
 
 function normalizePhone(raw) {
   if (!raw) return ''
-  let digits = String(raw).replace(/\D/g, '')
-  if (digits.length === 12 && digits.startsWith('91')) digits = digits.slice(2)
-  else if (digits.length === 13 && digits.startsWith('091')) digits = digits.slice(3)
-  else if (digits.length === 11 && digits.startsWith('0')) digits = digits.slice(1)
+  let str = String(raw).trim()
+  if (str.startsWith('+91')) str = str.slice(3)
+  let digits = str.replace(/\D/g, '')
+  if (digits.length === 11 && digits.startsWith('0')) digits = digits.slice(1)
   return digits.slice(-10)
 }
 
@@ -178,6 +178,7 @@ function App() {
         const mapped = mapRowData(r, mapping)
         return {
           ...mapped,
+          company_phone: normalizePhone(mapped.company_phone),
           searchValue: mapped.name || '',
           rowId: `row-${++rowIdCounter}`,
           tag: null,
@@ -264,7 +265,7 @@ function App() {
       try {
         await api.addTag({
           name: row.name || '',
-          phone: row.company_phone || '',
+          phone: normalizePhone(row.company_phone),
           taggedBy: auth.displayName || auth.uid,
           tag
         })
@@ -385,7 +386,7 @@ function App() {
         query: row.query || '',
         name: row.name || '',
         website: row.website || '',
-        company_phone: row.company_phone || '',
+        company_phone: normalizePhone(row.company_phone),
         email: row.email || '',
         pushed_by: pushedByName.trim(),
         comments: row.Comments || '',
