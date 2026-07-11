@@ -457,7 +457,7 @@ function App() {
     const row = allRowsRef.current.find(r => r.rowId === rowId)
     setSelectedLead(row || null)
     if (row && row.searchValue) {
-      window.open(`https://www.google.com/search?q=${encodeURIComponent(row.searchValue)}`, '_blank')
+      window.open(`https://www.google.com/search?q=${encodeURIComponent(row.searchValue)}&_t=${Date.now()}`, '_blank')
     }
   }, [])
 
