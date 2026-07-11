@@ -12,7 +12,13 @@ async function post(url, body) {
     body: JSON.stringify(body)
   })
   const text = await res.text()
-  try { return JSON.parse(text) } catch { return { raw: text } }
+  try {
+    const parsed = JSON.parse(text)
+    return parsed
+  } catch {
+    console.error('[API] Non-JSON response:', text.substring(0, 500))
+    return { error: 'Invalid response from server' }
+  }
 }
 
 export async function login(uid, password) {

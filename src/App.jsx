@@ -384,7 +384,10 @@ function App() {
       return
     }
     try {
-      const result = await api.discardMasterRow(auth.masterSheetId, { name: row.name, website: row.website })
+      const rowKey = { name: row.name || '', website: row.website || '' }
+      console.log('[Discard]', { sheetId: auth.masterSheetId, rowKey })
+      const result = await api.discardMasterRow(auth.masterSheetId, rowKey)
+      console.log('[Discard] result:', result)
       if (result.error) {
         addToast('Discard failed: ' + result.error, 'error')
         return
@@ -392,7 +395,8 @@ function App() {
       setMasterRows(prev => prev.filter(r => !(r.name === row.name && r.website === row.website)))
       addToast('Lead discarded', 'info')
     } catch (e) {
-      addToast('Discard failed — network error', 'error')
+      console.error('[Discard] exception:', e)
+      addToast('Discard failed — ' + (e.message || 'network error'), 'error')
     }
   }, [auth, addToast])
 

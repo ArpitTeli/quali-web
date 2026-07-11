@@ -23,7 +23,7 @@ function doPost(e) {
 
     return ContentService.createTextOutput(JSON.stringify(result))
   } catch (err) {
-    return ContentService.createTextOutput(JSON.stringify({ error: err.message }))
+    return ContentService.createTextOutput(JSON.stringify({ error: err.message || String(err) }))
   }
 }
 
@@ -79,7 +79,7 @@ function updateMasterRow(sheetId, name, website, field, value) {
   if (data.length < 2) return { error: 'Empty sheet' }
 
   var headers = data[0].map(function(h) { return String(h).trim().toLowerCase() })
-  var fieldIdx = headers.indexOf(field.toLowerCase())
+  var fieldIdx = headers.indexOf(String(field || '').toLowerCase())
   if (fieldIdx === -1) return { error: 'Column not found: ' + field }
 
   var rowIdx = findRow(data, data[0].map(function(h) { return String(h).trim() }), name, website)
@@ -138,10 +138,11 @@ function getMasterStats(sheetId) {
   var total = 0, good = 0, maybe = 0, bad = 0
   for (var i = 1; i < data.length; i++) {
     total++
-    var status = String(data[i][statusIdx] || '').toLowerCase()
-    if (status === 'green') good++
-    else if (status === 'yellow') maybe++
-    else if (status === 'red') bad++
+    if (statusIdx === -1) continue
+    var status = String(data[i][statusIdx] || '').toLowerCase().trim()
+    if (status === 'good' || status === 'green') good++
+    else if (status === 'maybe' || status === 'yellow') maybe++
+    else if (status === 'bad' || status === 'red') bad++
   }
 
   return { totalLeads: total, good: good, maybe: maybe, bad: bad, lastModified: new Date().toISOString() }
