@@ -7,24 +7,26 @@ function doPost(e) {
   try {
     const body = JSON.parse(e.postData.contents)
     const action = body.action
+    let result
 
     if (action === 'readMaster') {
-      return readMaster(body.sheetId)
-    }
-    if (action === 'updateMasterRow') {
-      return updateMasterRow(body.sheetId, body.rowKey, body.field, body.value)
-    }
-    if (action === 'discardMasterRow') {
-      return discardMasterRow(body.sheetId, body.rowKey)
-    }
-    if (action === 'addMasterLead') {
-      return addMasterLead(body.sheetId, body.row)
-    }
-    if (action === 'getMasterStats') {
-      return getMasterStats(body.sheetId)
+      result = readMaster(body.sheetId)
+    } else if (action === 'updateMasterRow') {
+      result = updateMasterRow(body.sheetId, body.rowKey, body.field, body.value)
+    } else if (action === 'discardMasterRow') {
+      result = discardMasterRow(body.sheetId, body.rowKey)
+    } else if (action === 'addMasterLead') {
+      result = addMasterLead(body.sheetId, body.row)
+    } else if (action === 'getMasterStats') {
+      result = getMasterStats(body.sheetId)
+    } else {
+      result = { error: 'Unknown action: ' + action }
     }
 
-    return ContentService.createTextOutput(JSON.stringify({ error: 'Unknown action: ' + action }))
+    if (typeof result === 'string') {
+      return ContentService.createTextOutput(result)
+    }
+    return ContentService.createTextOutput(JSON.stringify(result))
   } catch (err) {
     return ContentService.createTextOutput(JSON.stringify({ error: err.message }))
   }
@@ -37,11 +39,11 @@ function doGet(e) {
 // ===== READ ALL ROWS =====
 function readMaster(sheetId) {
   const ss = getSheet(sheetId)
-  if (!ss) return { error: 'Sheet not found' }
+  if (!ss) return ContentService.createTextOutput(JSON.stringify({ error: 'Sheet not found' }))
 
   const sheet = ss.getSheets()[0]
   const data = sheet.getDataRange().getValues()
-  if (data.length < 2) return { rows: [] }
+  if (data.length < 2) return ContentService.createTextOutput(JSON.stringify({ rows: [] }))
 
   const headers = data[0].map(h => String(h).trim())
   const rows = []
