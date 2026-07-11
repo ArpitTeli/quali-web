@@ -15,6 +15,8 @@ function doPost(e) {
       result = discardMasterRow(body.sheetId, body.name, body.website)
     } else if (action === 'addMasterLead') {
       result = addMasterLead(body.sheetId, body.row)
+    } else if (action === 'batchAddMasterLeads') {
+      result = batchAddMasterLeads(body.sheetId, body.rows)
     } else if (action === 'getMasterStats') {
       result = getMasterStats(body.sheetId)
     } else {
@@ -118,10 +120,8 @@ function addMasterLead(sheetId, row) {
     headers.push.apply(headers, newHeaders)
   }
 
-  // Upsert: check if a row with the same name+website already exists
   var existingIdx = findRow(data, headers, row.name || '', row.website || '')
   if (existingIdx !== -1) {
-    // Update existing row
     for (var c = 0; c < headers.length; c++) {
       var val = row[headers[c]] || ''
       if (val !== '') {
@@ -131,11 +131,59 @@ function addMasterLead(sheetId, row) {
     return { success: true, updated: true }
   }
 
-  // No duplicate found — append new row
   var newRow = headers.map(function(h) { return row[h] || '' })
   sheet.appendRow(newRow)
-
   return { success: true, appended: true }
+}
+
+function batchAddMasterLeads(sheetId, rows) {
+  var ss = getSheet(sheetId)
+  if (!ss) return { error: 'Sheet not found' }
+  if (!rows || !rows.length) return { success: true, added: 0, updated: 0 }
+
+  var sheet = ss.getSheets()[0]
+  var data = sheet.getDataRange().getValues()
+  var headers = data.length > 0 ? data[0].map(function(h) { return String(h).trim() }) : []
+
+  if (headers.length === 0) {
+    var newHeaders = ['query', 'name', 'website', 'company_phone', 'email', 'Lead Status', 'Comments']
+    sheet.getRange(1, 1, 1, newHeaders.length).setValues([newHeaders])
+    headers = newHeaders.slice()
+  }
+
+  var nameIdx = headers.indexOf('name')
+  var websiteIdx = headers.indexOf('website')
+  var existingKeys = {}
+  for (var i = 1; i < data.length; i++) {
+    var k = String(data[i][nameIdx] || '').trim().toLowerCase() + '|' + String(data[i][websiteIdx] || '').trim().toLowerCase()
+    existingKeys[k] = i
+  }
+
+  var toAppend = []
+  var updated = 0
+
+  for (var r = 0; r < rows.length; r++) {
+    var row = rows[r]
+    var key = (row.name || '').trim().toLowerCase() + '|' + (row.website || '').trim().toLowerCase()
+
+    if (existingKeys[key] !== undefined) {
+      var rowIdx = existingKeys[key]
+      for (var c = 0; c < headers.length; c++) {
+        var val = row[headers[c]] || ''
+        if (val !== '') sheet.getRange(rowIdx + 1, c + 1).setValue(val)
+      }
+      updated++
+    } else {
+      toAppend.push(headers.map(function(h) { return row[h] || '' }))
+      existingKeys[key] = data.length + toAppend.length
+    }
+  }
+
+  if (toAppend.length > 0) {
+    sheet.getRange(data.length + 1, 1, toAppend.length, headers.length).setValues(toAppend)
+  }
+
+  return { success: true, added: toAppend.length, updated: updated, total: rows.length }
 }
 
 function getMasterStats(sheetId) {
