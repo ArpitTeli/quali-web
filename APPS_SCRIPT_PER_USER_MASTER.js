@@ -67,7 +67,7 @@ function updateMasterRow(sheetId, rowKey, field, value) {
 
   if (fieldIdx === -1) return { error: 'Column not found: ' + field }
 
-  var parts = rowKey.split('|')
+  var parts = rowKey.split('||')
   var keyName = (parts[0] || '').trim().toLowerCase()
   var keyWebsite = (parts[1] || '').trim().toLowerCase()
 
@@ -99,7 +99,7 @@ function discardMasterRow(sheetId, rowKey) {
     return { error: 'Columns not found. Headers: ' + JSON.stringify(data[0]) }
   }
 
-  var parts = rowKey.split('|')
+  var parts = rowKey.split('||')
   var keyName = (parts[0] || '').trim().toLowerCase()
   var keyWebsite = (parts[1] || '').trim().toLowerCase()
 
