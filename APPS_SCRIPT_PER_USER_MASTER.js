@@ -1,7 +1,5 @@
 // ===== QUALI WEB — Per-User Master Sheet Apps Script =====
 // Deploy this as a Web App (Execute as: Me, Access: Anyone)
-// Each user has their own Google Sheet with this script bound to it.
-// OR: Use a single standalone script that takes sheetId parameter.
 
 function doPost(e) {
   try {
@@ -23,9 +21,6 @@ function doPost(e) {
       result = { error: 'Unknown action: ' + action }
     }
 
-    if (typeof result === 'string') {
-      return ContentService.createTextOutput(result)
-    }
     return ContentService.createTextOutput(JSON.stringify(result))
   } catch (err) {
     return ContentService.createTextOutput(JSON.stringify({ error: err.message }))
@@ -36,51 +31,49 @@ function doGet(e) {
   return ContentService.createTextOutput('Quali Master Sheet API — Use POST')
 }
 
-// ===== READ ALL ROWS =====
 function readMaster(sheetId) {
-  const ss = getSheet(sheetId)
-  if (!ss) return ContentService.createTextOutput(JSON.stringify({ error: 'Sheet not found' }))
+  var ss = getSheet(sheetId)
+  if (!ss) return { error: 'Sheet not found' }
 
-  const sheet = ss.getSheets()[0]
-  const data = sheet.getDataRange().getValues()
-  if (data.length < 2) return ContentService.createTextOutput(JSON.stringify({ rows: [] }))
+  var sheet = ss.getSheets()[0]
+  var data = sheet.getDataRange().getValues()
+  if (data.length < 2) return { rows: [] }
 
-  const headers = data[0].map(h => String(h).trim())
-  const rows = []
-  for (let i = 1; i < data.length; i++) {
-    const row = {}
-    for (let j = 0; j < headers.length; j++) {
+  var headers = data[0].map(function(h) { return String(h).trim() })
+  var rows = []
+  for (var i = 1; i < data.length; i++) {
+    var row = {}
+    for (var j = 0; j < headers.length; j++) {
       row[headers[j]] = data[i][j] != null ? String(data[i][j]) : ''
     }
     rows.push(row)
   }
 
-  return ContentService.createTextOutput(JSON.stringify({ rows }))
+  return { rows: rows }
 }
 
-// ===== UPDATE A SINGLE CELL =====
 function updateMasterRow(sheetId, rowKey, field, value) {
-  const ss = getSheet(sheetId)
+  var ss = getSheet(sheetId)
   if (!ss) return { error: 'Sheet not found' }
 
-  const sheet = ss.getSheets()[0]
-  const data = sheet.getDataRange().getValues()
+  var sheet = ss.getSheets()[0]
+  var data = sheet.getDataRange().getValues()
   if (data.length < 2) return { error: 'Empty sheet' }
 
-  const headers = data[0].map(h => String(h).trim())
-  const nameIdx = headers.indexOf('name')
-  const websiteIdx = headers.indexOf('website')
-  const fieldIdx = headers.indexOf(field)
+  var headers = data[0].map(function(h) { return String(h).trim() })
+  var nameIdx = headers.indexOf('name')
+  var websiteIdx = headers.indexOf('website')
+  var fieldIdx = headers.indexOf(field)
 
   if (fieldIdx === -1) return { error: 'Column not found: ' + field }
 
-  const parts = rowKey.split('|')
-  const keyName = parts[0] || ''
-  const keyWebsite = parts[1] || ''
+  var parts = rowKey.split('|')
+  var keyName = parts[0] || ''
+  var keyWebsite = parts[1] || ''
 
-  for (let i = 1; i < data.length; i++) {
-    const rowName = String(data[i][nameIdx] || '').trim()
-    const rowWebsite = String(data[i][websiteIdx] || '').trim()
+  for (var i = 1; i < data.length; i++) {
+    var rowName = String(data[i][nameIdx] || '').trim()
+    var rowWebsite = String(data[i][websiteIdx] || '').trim()
     if (rowName === keyName && rowWebsite === keyWebsite) {
       sheet.getRange(i + 1, fieldIdx + 1).setValue(value)
       return { success: true }
@@ -90,26 +83,25 @@ function updateMasterRow(sheetId, rowKey, field, value) {
   return { error: 'Row not found' }
 }
 
-// ===== DISCARD (DELETE) A ROW =====
 function discardMasterRow(sheetId, rowKey) {
-  const ss = getSheet(sheetId)
+  var ss = getSheet(sheetId)
   if (!ss) return { error: 'Sheet not found' }
 
-  const sheet = ss.getSheets()[0]
-  const data = sheet.getDataRange().getValues()
+  var sheet = ss.getSheets()[0]
+  var data = sheet.getDataRange().getValues()
   if (data.length < 2) return { error: 'Empty sheet' }
 
-  const headers = data[0].map(h => String(h).trim())
-  const nameIdx = headers.indexOf('name')
-  const websiteIdx = headers.indexOf('website')
+  var headers = data[0].map(function(h) { return String(h).trim() })
+  var nameIdx = headers.indexOf('name')
+  var websiteIdx = headers.indexOf('website')
 
-  const parts = rowKey.split('|')
-  const keyName = parts[0] || ''
-  const keyWebsite = parts[1] || ''
+  var parts = rowKey.split('|')
+  var keyName = parts[0] || ''
+  var keyWebsite = parts[1] || ''
 
-  for (let i = 1; i < data.length; i++) {
-    const rowName = String(data[i][nameIdx] || '').trim()
-    const rowWebsite = String(data[i][websiteIdx] || '').trim()
+  for (var i = 1; i < data.length; i++) {
+    var rowName = String(data[i][nameIdx] || '').trim()
+    var rowWebsite = String(data[i][websiteIdx] || '').trim()
     if (rowName === keyName && rowWebsite === keyWebsite) {
       sheet.deleteRow(i + 1)
       return { success: true }
@@ -119,53 +111,49 @@ function discardMasterRow(sheetId, rowKey) {
   return { error: 'Row not found' }
 }
 
-// ===== ADD A NEW LEAD =====
 function addMasterLead(sheetId, row) {
-  const ss = getSheet(sheetId)
+  var ss = getSheet(sheetId)
   if (!ss) return { error: 'Sheet not found' }
 
-  const sheet = ss.getSheets()[0]
-  const data = sheet.getDataRange().getValues()
-  const headers = data.length > 0 ? data[0].map(h => String(h).trim()) : []
+  var sheet = ss.getSheets()[0]
+  var data = sheet.getDataRange().getValues()
+  var headers = data.length > 0 ? data[0].map(function(h) { return String(h).trim() }) : []
 
   if (headers.length === 0) {
-    // Create headers if sheet is empty
-    const newHeaders = ['query', 'name', 'website', 'company_phone', 'email', 'Lead Status', 'Comments']
+    var newHeaders = ['query', 'name', 'website', 'company_phone', 'email', 'Lead Status', 'Comments']
     sheet.getRange(1, 1, 1, newHeaders.length).setValues([newHeaders])
-    headers.push(...newHeaders)
+    headers.push.apply(headers, newHeaders)
   }
 
-  const newRow = headers.map(h => row[h] || '')
+  var newRow = headers.map(function(h) { return row[h] || '' })
   sheet.appendRow(newRow)
 
   return { success: true }
 }
 
-// ===== GET STATS =====
 function getMasterStats(sheetId) {
-  const ss = getSheet(sheetId)
+  var ss = getSheet(sheetId)
   if (!ss) return { error: 'Sheet not found' }
 
-  const sheet = ss.getSheets()[0]
-  const data = sheet.getDataRange().getValues()
+  var sheet = ss.getSheets()[0]
+  var data = sheet.getDataRange().getValues()
   if (data.length < 2) return { totalLeads: 0, good: 0, maybe: 0, bad: 0 }
 
-  const headers = data[0].map(h => String(h).trim())
-  const statusIdx = headers.indexOf('Lead Status')
+  var headers = data[0].map(function(h) { return String(h).trim() })
+  var statusIdx = headers.indexOf('Lead Status')
 
-  let total = 0, good = 0, maybe = 0, bad = 0
-  for (let i = 1; i < data.length; i++) {
+  var total = 0, good = 0, maybe = 0, bad = 0
+  for (var i = 1; i < data.length; i++) {
     total++
-    const status = String(data[i][statusIdx] || '').toLowerCase()
+    var status = String(data[i][statusIdx] || '').toLowerCase()
     if (status === 'green') good++
     else if (status === 'yellow') maybe++
     else if (status === 'red') bad++
   }
 
-  return { totalLeads: total, good, maybe, bad, lastModified: new Date().toISOString() }
+  return { totalLeads: total, good: good, maybe: maybe, bad: bad, lastModified: new Date().toISOString() }
 }
 
-// ===== HELPER: GET SPREADSHEET BY ID =====
 function getSheet(sheetId) {
   if (!sheetId || !String(sheetId).trim()) {
     return null
