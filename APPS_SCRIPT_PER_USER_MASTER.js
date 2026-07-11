@@ -118,10 +118,24 @@ function addMasterLead(sheetId, row) {
     headers.push.apply(headers, newHeaders)
   }
 
+  // Upsert: check if a row with the same name+website already exists
+  var existingIdx = findRow(data, headers, row.name || '', row.website || '')
+  if (existingIdx !== -1) {
+    // Update existing row
+    for (var c = 0; c < headers.length; c++) {
+      var val = row[headers[c]] || ''
+      if (val !== '') {
+        sheet.getRange(existingIdx + 1, c + 1).setValue(val)
+      }
+    }
+    return { success: true, updated: true }
+  }
+
+  // No duplicate found — append new row
   var newRow = headers.map(function(h) { return row[h] || '' })
   sheet.appendRow(newRow)
 
-  return { success: true }
+  return { success: true, appended: true }
 }
 
 function getMasterStats(sheetId) {
