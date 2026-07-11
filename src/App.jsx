@@ -384,7 +384,7 @@ function App() {
       return
     }
     try {
-      const result = await api.discardMasterRow(auth.masterSheetId, `${row.name}||${row.website}`)
+      const result = await api.discardMasterRow(auth.masterSheetId, { name: row.name, website: row.website })
       if (result.error) {
         addToast('Discard failed: ' + result.error, 'error')
         return
@@ -424,7 +424,7 @@ function App() {
 
     if (auth.masterSheetId) {
       try {
-        await api.discardMasterRow(auth.masterSheetId, `${row.name}||${row.website}`)
+        await api.discardMasterRow(auth.masterSheetId, { name: row.name, website: row.website })
       } catch (e) { /* ignore */ }
     }
     setMasterRows(prev => prev.filter(r => !(r.name === row.name && r.website === row.website)))
@@ -742,7 +742,7 @@ function App() {
                   if (commentTimerRef.current) clearTimeout(commentTimerRef.current)
                   commentTimerRef.current = setTimeout(() => {
                     if (auth.masterSheetId) {
-                      api.updateMasterRow(auth.masterSheetId, `${selectedCommentRow.name}||${selectedCommentRow.website}`, 'Comments', val).catch(() => {})
+                      api.updateMasterRow(auth.masterSheetId, { name: selectedCommentRow.name, website: selectedCommentRow.website }, 'Comments', val).catch(() => {})
                     }
                   }, 500)
                 }}

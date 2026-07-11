@@ -32,11 +32,11 @@ export async function readMasterSheet(sheetId) {
 }
 
 export async function updateMasterRow(sheetId, rowKey, field, value) {
-  return post(MASTER_SCRIPT_URL, { action: 'updateMasterRow', sheetId, rowKey, field, value })
+  return post(MASTER_SCRIPT_URL, { action: 'updateMasterRow', sheetId, name: rowKey.name, website: rowKey.website, field, value })
 }
 
 export async function discardMasterRow(sheetId, rowKey) {
-  return post(MASTER_SCRIPT_URL, { action: 'discardMasterRow', sheetId, rowKey })
+  return post(MASTER_SCRIPT_URL, { action: 'discardMasterRow', sheetId, name: rowKey.name, website: rowKey.website })
 }
 
 export async function addMasterLead(sheetId, row) {

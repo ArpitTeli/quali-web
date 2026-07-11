@@ -3,16 +3,16 @@
 
 function doPost(e) {
   try {
-    const body = JSON.parse(e.postData.contents)
-    const action = body.action
-    let result
+    var body = JSON.parse(e.postData.contents)
+    var action = body.action
+    var result
 
     if (action === 'readMaster') {
       result = readMaster(body.sheetId)
     } else if (action === 'updateMasterRow') {
-      result = updateMasterRow(body.sheetId, body.rowKey, body.field, body.value)
+      result = updateMasterRow(body.sheetId, body.name, body.website, body.field, body.value)
     } else if (action === 'discardMasterRow') {
-      result = discardMasterRow(body.sheetId, body.rowKey)
+      result = discardMasterRow(body.sheetId, body.name, body.website)
     } else if (action === 'addMasterLead') {
       result = addMasterLead(body.sheetId, body.row)
     } else if (action === 'getMasterStats') {
@@ -52,38 +52,25 @@ function readMaster(sheetId) {
   return { rows: rows }
 }
 
-function updateMasterRow(sheetId, rowKey, field, value) {
-  var ss = getSheet(sheetId)
-  if (!ss) return { error: 'Sheet not found' }
-
-  var sheet = ss.getSheets()[0]
-  var data = sheet.getDataRange().getValues()
-  if (data.length < 2) return { error: 'Empty sheet' }
-
-  var headers = data[0].map(function(h) { return String(h).trim().toLowerCase() })
+function findRow(data, headers, name, website) {
   var nameIdx = headers.indexOf('name')
   var websiteIdx = headers.indexOf('website')
-  var fieldIdx = headers.indexOf(field.toLowerCase())
+  if (nameIdx === -1 || websiteIdx === -1) return -1
 
-  if (fieldIdx === -1) return { error: 'Column not found: ' + field }
-
-  var parts = rowKey.split('||')
-  var keyName = (parts[0] || '').trim().toLowerCase()
-  var keyWebsite = (parts[1] || '').trim().toLowerCase()
+  var keyName = (name || '').trim().toLowerCase()
+  var keyWebsite = (website || '').trim().toLowerCase()
 
   for (var i = 1; i < data.length; i++) {
     var rowName = String(data[i][nameIdx] || '').trim().toLowerCase()
     var rowWebsite = String(data[i][websiteIdx] || '').trim().toLowerCase()
     if (rowName === keyName && rowWebsite === keyWebsite) {
-      sheet.getRange(i + 1, fieldIdx + 1).setValue(value)
-      return { success: true }
+      return i
     }
   }
-
-  return { error: 'Row not found' }
+  return -1
 }
 
-function discardMasterRow(sheetId, rowKey) {
+function updateMasterRow(sheetId, name, website, field, value) {
   var ss = getSheet(sheetId)
   if (!ss) return { error: 'Sheet not found' }
 
@@ -92,27 +79,29 @@ function discardMasterRow(sheetId, rowKey) {
   if (data.length < 2) return { error: 'Empty sheet' }
 
   var headers = data[0].map(function(h) { return String(h).trim().toLowerCase() })
-  var nameIdx = headers.indexOf('name')
-  var websiteIdx = headers.indexOf('website')
+  var fieldIdx = headers.indexOf(field.toLowerCase())
+  if (fieldIdx === -1) return { error: 'Column not found: ' + field }
 
-  if (nameIdx === -1 || websiteIdx === -1) {
-    return { error: 'Columns not found. Headers: ' + JSON.stringify(data[0]) }
-  }
+  var rowIdx = findRow(data, data[0].map(function(h) { return String(h).trim() }), name, website)
+  if (rowIdx === -1) return { error: 'Row not found: ' + name }
 
-  var parts = rowKey.split('||')
-  var keyName = (parts[0] || '').trim().toLowerCase()
-  var keyWebsite = (parts[1] || '').trim().toLowerCase()
+  sheet.getRange(rowIdx + 1, fieldIdx + 1).setValue(value)
+  return { success: true }
+}
 
-  for (var i = 1; i < data.length; i++) {
-    var rowName = String(data[i][nameIdx] || '').trim().toLowerCase()
-    var rowWebsite = String(data[i][websiteIdx] || '').trim().toLowerCase()
-    if (rowName === keyName && rowWebsite === keyWebsite) {
-      sheet.deleteRow(i + 1)
-      return { success: true }
-    }
-  }
+function discardMasterRow(sheetId, name, website) {
+  var ss = getSheet(sheetId)
+  if (!ss) return { error: 'Sheet not found' }
 
-  return { error: 'Row not found. Key: ' + rowKey + ' Headers: ' + JSON.stringify(data[0]) }
+  var sheet = ss.getSheets()[0]
+  var data = sheet.getDataRange().getValues()
+  if (data.length < 2) return { error: 'Empty sheet' }
+
+  var rowIdx = findRow(data, data[0].map(function(h) { return String(h).trim() }), name, website)
+  if (rowIdx === -1) return { error: 'Row not found: ' + name }
+
+  sheet.deleteRow(rowIdx + 1)
+  return { success: true }
 }
 
 function addMasterLead(sheetId, row) {
