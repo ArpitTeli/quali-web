@@ -199,9 +199,9 @@ function App() {
         skippedByCloud = before - rows.length
       }
 
-      if (skedByCloud > 0) {
-        setCloudMasterFiltered(skedByCloud)
-        addToast(`${skedByCloud} lead(s) skipped — already tagged by others`, 'info')
+      if (skippedByCloud > 0) {
+        setCloudMasterFiltered(skippedByCloud)
+        addToast(`${skippedByCloud} lead(s) skipped — already tagged by others`, 'info')
       } else {
         setCloudMasterFiltered(0)
       }
@@ -244,7 +244,7 @@ function App() {
       storage.saveActivities(act)
       setActivities(act)
 
-      addToast(`Loaded ${rows.length} leads${skedByCloud > 0 ? ` (${skedByCloud} skipped)` : ''}`, 'success')
+      addToast(`Loaded ${rows.length} leads${skippedByCloud > 0 ? ` (${skippedByCloud} skipped)` : ''}`, 'success')
     } catch (err) {
       console.error('Setup failed:', err)
       addToast('Setup failed: ' + (err.message || err), 'error')
