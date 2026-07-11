@@ -271,6 +271,20 @@ function App() {
         })
       } catch (e) { /* fire and forget */ }
 
+      if (auth.masterSheetId) {
+        try {
+          await api.addMasterLead(auth.masterSheetId, {
+            query: row.query || '',
+            name: row.name || '',
+            website: row.website || '',
+            company_phone: row.company_phone || '',
+            email: row.email || '',
+            'Lead Status': tag === 'green' ? 'Good' : tag === 'yellow' ? 'Maybe' : tag === 'red' ? 'Bad' : '',
+            Comments: ''
+          })
+        } catch (e) { /* fire and forget */ }
+      }
+
       setCloudMasterData(prev => {
         const names = new Set(prev.names)
         const phones = new Set(prev.phones)
