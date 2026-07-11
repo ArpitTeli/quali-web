@@ -2,15 +2,13 @@
 //
 // SETUP:
 // 1. Create a Google Sheet with columns: UID, Pass
-//    (No other columns needed — UID is used as display name)
 // 2. Add users as rows (e.g. arpit, mypassword)
 // 3. Extensions → Apps Script → paste this code
 // 4. Deploy → New Deployment → Web App → Execute as: Me → Access: Anyone
 // 5. Visit the URL in browser once to accept permissions
 //
 // The script auto-creates a personal Google Sheet per user on first login.
-// Sheet name: "Quali Master - {uid}"
-// Headers: query, name, website, company_phone, email, Lead Status, Comments
+// It also auto-creates a MasterSheetId column if missing.
 
 function doPost(e) {
   try {
@@ -42,10 +40,17 @@ function handleLogin(uid, password) {
   const headers = data[0].map(h => String(h).trim().toLowerCase())
   const uidIdx = headers.indexOf('uid')
   const passIdx = headers.indexOf('pass')
-  const sheetIdIdx = headers.indexOf('mastersheetid')
+  let sheetIdIdx = headers.indexOf('mastersheetid')
 
   if (uidIdx === -1 || passIdx === -1) {
     return ContentService.createTextOutput(JSON.stringify({ success: false, error: 'Auth sheet missing UID or Pass columns' }))
+  }
+
+  // Auto-create MasterSheetId column if it doesn't exist
+  if (sheetIdIdx === -1) {
+    const lastCol = sheet.getLastColumn()
+    sheet.getRange(1, lastCol + 1).setValue('MasterSheetId')
+    sheetIdIdx = lastCol // 0-based index for array access
   }
 
   for (let i = 1; i < data.length; i++) {
@@ -53,12 +58,11 @@ function handleLogin(uid, password) {
     const rowPass = String(data[i][passIdx] || '').trim()
 
     if (rowUid === uid && rowPass === password) {
-      // UID is the display name (no separate Name column)
       const displayName = rowUid
       let masterSheetId = sheetIdIdx >= 0 ? String(data[i][sheetIdIdx] || '').trim() : ''
 
-      // Auto-create master sheet if MasterSheetId column exists but is empty
-      if (!masterSheetId && sheetIdIdx >= 0) {
+      // Auto-create master sheet if empty
+      if (!masterSheetId) {
         masterSheetId = createMasterSheet(uid)
         if (masterSheetId) {
           sheet.getRange(i + 1, sheetIdIdx + 1).setValue(masterSheetId)

@@ -48,6 +48,7 @@ function App() {
 
   const allRowsRef = useRef([])
   const [allRows, setAllRows] = useState([])
+  const excelDataRef = useRef(null)
   const [batchRows, setBatchRows] = useState([])
   const [stats, setStats] = useState({ total: 0, processed: 0, remaining: 0, inBatch: 0 })
   const [activeTab, setActiveTab] = useState(null)
@@ -111,7 +112,11 @@ function App() {
         if (auth.masterSheetId) {
           try {
             const stats = await api.getMasterStats(auth.masterSheetId)
-            if (stats && stats.totalLeads !== undefined) setMasterStats(stats)
+            if (stats && stats.error) {
+              console.warn('Master stats error:', stats.error)
+            } else if (stats && stats.totalLeads !== undefined) {
+              setMasterStats(stats)
+            }
           } catch (e) { /* ignore */ }
         }
         setActivities(storage.getActivities())
@@ -141,6 +146,7 @@ function App() {
 
   const handleFileLoad = useCallback((data) => {
     setExcelData(data.data)
+    excelDataRef.current = data.data
     setColumnMapping(data.columnMapping)
     setRowCount(data.rowCount || 0)
     setIsAdditional(false)
@@ -152,7 +158,7 @@ function App() {
       setColumnMapping(setupData.columnMapping)
       setBatchSize(setupData.batchSize)
 
-      const currentExcelData = excelData
+      const currentExcelData = excelDataRef.current
       console.log('[SetupComplete]', { sheetName: setupData.sheetName, hasExcelData: !!currentExcelData, batchSize: setupData.batchSize })
       if (!currentExcelData) {
         addToast('No file loaded — try uploading again', 'error')
@@ -243,7 +249,7 @@ function App() {
       console.error('Setup failed:', err)
       addToast('Setup failed: ' + (err.message || err), 'error')
     }
-  }, [excelData, isAdditional, cloudMasterData, addToast])
+  }, [isAdditional, cloudMasterData, addToast])
 
   const handleTag = useCallback(async (rowId, tag) => {
     const row = allRowsRef.current.find(r => r.rowId === rowId)
@@ -321,6 +327,7 @@ function App() {
   const handleGoHome = useCallback(() => {
     setView('landing')
     setExcelData(null)
+    excelDataRef.current = null
     setColumnMapping({})
     setBatchSize(20)
     setStats({ total: 0, processed: 0, remaining: 0, inBatch: 0 })
@@ -338,25 +345,32 @@ function App() {
   const handleOpenMasterViewer = useCallback(async () => {
     setMasterLoading(true)
     setView('master')
-    if (auth.masterSheetId) {
-      try {
-        const result = await api.readMasterSheet(auth.masterSheetId)
-        if (result.rows) {
-          setMasterRows(result.rows)
-        }
-      } catch (e) {
-        addToast('Failed to read master sheet', 'error')
+    if (!auth.masterSheetId) {
+      addToast('No master sheet linked. Please logout and login again to auto-create one.', 'error')
+      setMasterLoading(false)
+      return
+    }
+    try {
+      const result = await api.readMasterSheet(auth.masterSheetId)
+      if (result.error) {
+        addToast('Master sheet error: ' + result.error, 'error')
+      } else if (result.rows) {
+        setMasterRows(result.rows)
       }
+    } catch (e) {
+      addToast('Failed to read master sheet — check Apps Script deployment', 'error')
     }
     setMasterLoading(false)
   }, [auth, addToast])
 
   const handleDiscard = useCallback(async (row) => {
-    if (auth.masterSheetId) {
-      try {
-        await api.discardMasterRow(auth.masterSheetId, `${row.name}|${row.website}`)
-      } catch (e) { /* ignore */ }
+    if (!auth.masterSheetId) {
+      addToast('No master sheet linked', 'error')
+      return
     }
+    try {
+      await api.discardMasterRow(auth.masterSheetId, `${row.name}|${row.website}`)
+    } catch (e) { /* ignore */ }
     setMasterRows(prev => prev.filter(r => !(r.name === row.name && r.website === row.website)))
     addToast('Lead discarded', 'info')
   }, [auth, addToast])
@@ -396,12 +410,18 @@ function App() {
   }, [pushedByName, auth, addToast])
 
   const handleAddLead = useCallback(async (data) => {
-    if (auth.masterSheetId) {
+    if (!auth.masterSheetId) {
+      addToast('No master sheet linked — please logout and login again', 'error')
+      return { success: false }
+    }
+    try {
       const result = await api.addMasterLead(auth.masterSheetId, data)
       return result
+    } catch (e) {
+      addToast('Failed to add lead', 'error')
+      return { success: false }
     }
-    return { success: true }
-  }, [auth])
+  }, [auth, addToast])
 
   const handleAddFile = useCallback(() => {
     setIsAdditional(true)
@@ -694,7 +714,7 @@ function App() {
                   if (commentTimerRef.current) clearTimeout(commentTimerRef.current)
                   commentTimerRef.current = setTimeout(() => {
                     if (auth.masterSheetId) {
-                      api.updateMasterRow(auth.masterSheetId, `${selectedCommentRow.name}|${selectedCommentRow.website}`, 'Comments', val)
+                      api.updateMasterRow(auth.masterSheetId, `${selectedCommentRow.name}|${selectedCommentRow.website}`, 'Comments', val).catch(() => {})
                     }
                   }, 500)
                 }}

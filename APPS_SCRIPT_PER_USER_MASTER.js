@@ -165,13 +165,13 @@ function getMasterStats(sheetId) {
 
 // ===== HELPER: GET SPREADSHEET BY ID =====
 function getSheet(sheetId) {
-  if (!sheetId) {
-    // If no sheetId, use the bound spreadsheet (for per-user deployment)
-    return SpreadsheetApp.getActiveSpreadsheet()
+  if (!sheetId || !String(sheetId).trim()) {
+    return null
   }
   try {
-    return SpreadsheetApp.openById(sheetId)
+    return SpreadsheetApp.openById(String(sheetId).trim())
   } catch (e) {
+    console.error('Failed to open sheet ' + sheetId + ': ' + e.message)
     return null
   }
 }
