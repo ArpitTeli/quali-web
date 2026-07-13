@@ -33,6 +33,12 @@ function doGet(e) {
   return ContentService.createTextOutput('Quali Master Sheet API — Use POST')
 }
 
+function safeString(val) {
+  if (val == null) return ''
+  if (val instanceof Error) return '#ERROR!'
+  try { return String(val) } catch(e) { return '' }
+}
+
 function readMaster(sheetId) {
   var ss = getSheet(sheetId)
   if (!ss) return { error: 'Sheet not found' }
@@ -41,12 +47,12 @@ function readMaster(sheetId) {
   var data = sheet.getDataRange().getValues()
   if (data.length < 2) return { rows: [] }
 
-  var headers = data[0].map(function(h) { return String(h).trim() })
+  var headers = data[0].map(function(h) { return safeString(h).trim() })
   var rows = []
   for (var i = 1; i < data.length; i++) {
     var row = {}
     for (var j = 0; j < headers.length; j++) {
-      row[headers[j]] = data[i][j] != null ? String(data[i][j]) : ''
+      row[headers[j]] = safeString(data[i][j])
     }
     rows.push(row)
   }
@@ -63,8 +69,8 @@ function findRow(data, headers, name, website) {
   var keyWebsite = (website || '').trim().toLowerCase()
 
   for (var i = 1; i < data.length; i++) {
-    var rowName = String(data[i][nameIdx] || '').trim().toLowerCase()
-    var rowWebsite = String(data[i][websiteIdx] || '').trim().toLowerCase()
+    var rowName = safeString(data[i][nameIdx]).trim().toLowerCase()
+    var rowWebsite = safeString(data[i][websiteIdx]).trim().toLowerCase()
     if (rowName === keyName && rowWebsite === keyWebsite) {
       return i
     }
@@ -80,11 +86,11 @@ function updateMasterRow(sheetId, name, website, field, value) {
   var data = sheet.getDataRange().getValues()
   if (data.length < 2) return { error: 'Empty sheet' }
 
-  var headers = data[0].map(function(h) { return String(h).trim().toLowerCase() })
+  var headers = data[0].map(function(h) { return safeString(h).trim().toLowerCase() })
   var fieldIdx = headers.indexOf(String(field || '').toLowerCase())
   if (fieldIdx === -1) return { error: 'Column not found: ' + field }
 
-  var rowIdx = findRow(data, data[0].map(function(h) { return String(h).trim() }), name, website)
+  var rowIdx = findRow(data, data[0].map(function(h) { return safeString(h).trim() }), name, website)
   if (rowIdx === -1) return { error: 'Row not found: ' + name }
 
   sheet.getRange(rowIdx + 1, fieldIdx + 1).setValue(value)
@@ -99,7 +105,7 @@ function discardMasterRow(sheetId, name, website) {
   var data = sheet.getDataRange().getValues()
   if (data.length < 2) return { error: 'Empty sheet' }
 
-  var rowIdx = findRow(data, data[0].map(function(h) { return String(h).trim() }), name, website)
+  var rowIdx = findRow(data, data[0].map(function(h) { return safeString(h).trim() }), name, website)
   if (rowIdx === -1) return { error: 'Row not found: ' + name }
 
   sheet.deleteRow(rowIdx + 1)
@@ -112,7 +118,7 @@ function addMasterLead(sheetId, row) {
 
   var sheet = ss.getSheets()[0]
   var data = sheet.getDataRange().getValues()
-  var headers = data.length > 0 ? data[0].map(function(h) { return String(h).trim() }) : []
+  var headers = data.length > 0 ? data[0].map(function(h) { return safeString(h).trim() }) : []
 
   if (headers.length === 0) {
     var newHeaders = ['query', 'name', 'website', 'company_phone', 'email', 'Lead Status', 'Comments']
@@ -143,7 +149,7 @@ function batchAddMasterLeads(sheetId, rows) {
 
   var sheet = ss.getSheets()[0]
   var data = sheet.getDataRange().getValues()
-  var headers = data.length > 0 ? data[0].map(function(h) { return String(h).trim() }) : []
+  var headers = data.length > 0 ? data[0].map(function(h) { return safeString(h).trim() }) : []
 
   if (headers.length === 0) {
     var newHeaders = ['query', 'name', 'website', 'company_phone', 'email', 'Lead Status', 'Comments']
@@ -155,7 +161,7 @@ function batchAddMasterLeads(sheetId, rows) {
   var websiteIdx = headers.indexOf('website')
   var existingKeys = {}
   for (var i = 1; i < data.length; i++) {
-    var k = String(data[i][nameIdx] || '').trim().toLowerCase() + '|' + String(data[i][websiteIdx] || '').trim().toLowerCase()
+    var k = safeString(data[i][nameIdx]).trim().toLowerCase() + '|' + safeString(data[i][websiteIdx]).trim().toLowerCase()
     existingKeys[k] = i
   }
 
@@ -194,14 +200,14 @@ function getMasterStats(sheetId) {
   var data = sheet.getDataRange().getValues()
   if (data.length < 2) return { totalLeads: 0, good: 0, maybe: 0, bad: 0 }
 
-  var headers = data[0].map(function(h) { return String(h).trim() })
+  var headers = data[0].map(function(h) { return safeString(h).trim() })
   var statusIdx = headers.indexOf('Lead Status')
 
   var total = 0, good = 0, maybe = 0, bad = 0
   for (var i = 1; i < data.length; i++) {
     total++
     if (statusIdx === -1) continue
-    var status = String(data[i][statusIdx] || '').toLowerCase().trim()
+    var status = safeString(data[i][statusIdx]).toLowerCase().trim()
     if (status === 'good' || status === 'green') good++
     else if (status === 'maybe' || status === 'yellow') maybe++
     else if (status === 'bad' || status === 'red') bad++

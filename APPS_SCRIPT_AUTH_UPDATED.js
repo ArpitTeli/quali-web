@@ -37,7 +37,7 @@ function handleLogin(uid, password) {
     return ContentService.createTextOutput(JSON.stringify({ success: false, error: 'No users configured' }))
   }
 
-  const headers = data[0].map(h => String(h).trim().toLowerCase())
+  const headers = data[0].map(h => { try { return String(h).trim().toLowerCase() } catch(e) { return '' } })
   const uidIdx = headers.indexOf('uid')
   const passIdx = headers.indexOf('pass')
   let sheetIdIdx = headers.indexOf('mastersheetid')
@@ -54,12 +54,12 @@ function handleLogin(uid, password) {
   }
 
   for (let i = 1; i < data.length; i++) {
-    const rowUid = String(data[i][uidIdx] || '').trim()
-    const rowPass = String(data[i][passIdx] || '').trim()
+    const rowUid = (data[i][uidIdx] != null ? String(data[i][uidIdx]) : '').trim()
+    const rowPass = (data[i][passIdx] != null ? String(data[i][passIdx]) : '').trim()
 
     if (rowUid === uid && rowPass === password) {
       const displayName = rowUid
-      let masterSheetId = sheetIdIdx >= 0 ? String(data[i][sheetIdIdx] || '').trim() : ''
+      let masterSheetId = sheetIdIdx >= 0 ? (data[i][sheetIdIdx] != null ? String(data[i][sheetIdIdx]) : '').trim() : ''
 
       // Auto-create master sheet if empty
       if (!masterSheetId) {
