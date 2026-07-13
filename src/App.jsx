@@ -685,7 +685,7 @@ function App() {
                         <td className="font-medium">{row.name || '—'}</td>
                         <td className="text-muted">{row.query || '—'}</td>
                         <td className="text-muted">{row.website || '—'}</td>
-                        <td className="text-muted">{normalizePhone(row.company_phone) || '—'}</td>
+                        <td className="text-muted">{normalizePhone(row.company_phone) || row.company_phone || '—'}</td>
                         <td className="text-muted">{row.email || '—'}</td>
                         <td>
                           {statusLabel ? (
@@ -792,10 +792,10 @@ function App() {
                       <a className="lead-detail-value lead-detail-link" href={selectedLead.website.startsWith('http') ? selectedLead.website : `https://${selectedLead.website}`} target="_blank" rel="noopener noreferrer">{selectedLead.website}</a>
                     </div>
                   )}
-                  {selectedLead.company_phone && normalizePhone(selectedLead.company_phone) && (
+                  {(selectedLead.company_phone) && (
                     <div className="lead-detail-field">
                       <span className="lead-detail-label">Phone</span>
-                      <span className="lead-detail-value">{normalizePhone(selectedLead.company_phone)}</span>
+                      <span className="lead-detail-value">{normalizePhone(selectedLead.company_phone) || selectedLead.company_phone}</span>
                     </div>
                   )}
                   {selectedLead.email && (

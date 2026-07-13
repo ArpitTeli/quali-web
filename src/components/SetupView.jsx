@@ -107,7 +107,7 @@ function SetupView({ excelData, columnMapping: initialMapping, rowCount: maxRows
                       <td title={row.name}>{row.name || <span className="empty-cell">—</span>}</td>
                       <td title={row.query}>{row.query || <span className="empty-cell">—</span>}</td>
                       <td title={row.website}>{row.website || <span className="empty-cell">—</span>}</td>
-                      <td title={normalizePhone(row.company_phone)}>{normalizePhone(row.company_phone) || <span className="empty-cell">—</span>}</td>
+                      <td title={normalizePhone(row.company_phone) || row.company_phone}>{normalizePhone(row.company_phone) || row.company_phone || <span className="empty-cell">—</span>}</td>
                       <td title={row.email}>{row.email || <span className="empty-cell">—</span>}</td>
                     </tr>
                   ))}
