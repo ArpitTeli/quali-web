@@ -1,9 +1,9 @@
-const AUTH_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby2uJSX2B_U2mhhHbddDinjogb_EgfGO0rw2jo266A1qYhTIysL0Smsky-ovxqnMUI3zg/exec'
+const AUTH_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxDTPJExdQGRYcYsk32bll-1u-9Y8ofcD-ZkM3ITsTE-3jKnKpXBgRMVJ6nHnp3NsBGKg/exec'
 const CLOUD_MASTER_URL = 'https://script.google.com/macros/s/AKfycbzzdnjM8crblZhT7Fpw_yoRpS465ZGV9pRGJEkiFad0FB4lEfh_u3FY9Oi4ze683TgB6A/exec'
 const PUSH_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbykxuCQoi6WnnTXKdid4Ql6mwET2C68sMKZCvh7frIcGz5Wxe5lW8YR6c7Yo2s1qhPx/exec'
 
 // Per-user master sheet Apps Script
-const MASTER_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxL2X74YLdJMLWkql1kPMgi4m6zViXp75DN0m9OovSq9Gkd1WZ9H-wlafF4FxSamq8J/exec'
+const MASTER_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw4mIswXp7eGcze1rb8QWWY8Wi7Q2tw1gwc_Q-f5YAtwVoIoByrLHaY39QvsWxpPNU9/exec'
 
 async function post(url, body) {
   const res = await fetch(url, {
