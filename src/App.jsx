@@ -346,14 +346,26 @@ function App() {
       return
     }
     try {
-      const result = await api.readMasterSheet(auth.masterSheetId)
-      if (result.error) {
-        addToast('Master sheet error: ' + result.error, 'error')
-      } else if (result.rows) {
-        setMasterRows(result.rows.map(r => ({
-          ...r,
-          company_phone: normalizePhone(r.company_phone)
-        })))
+      const [masterResult, cloudResult] = await Promise.all([
+        api.readMasterSheet(auth.masterSheetId),
+        api.fetchCloudMaster()
+      ])
+
+      const cloudPhoneMap = new Map()
+      if (cloudResult.taggedLeads) {
+        cloudResult.taggedLeads.forEach(l => {
+          const key = (l.name || '').toLowerCase().trim()
+          if (key && l.phone) cloudPhoneMap.set(key, l.phone)
+        })
+      }
+
+      if (masterResult.error) {
+        addToast('Master sheet error: ' + masterResult.error, 'error')
+      } else if (masterResult.rows) {
+        setMasterRows(masterResult.rows.map(r => {
+          const cloudPhone = cloudPhoneMap.get((r.name || '').toLowerCase().trim())
+          return { ...r, company_phone: normalizePhone(cloudPhone || r.company_phone) }
+        }))
       }
     } catch (e) {
       addToast('Failed to read master sheet — check Apps Script deployment', 'error')
