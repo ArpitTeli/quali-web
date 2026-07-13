@@ -52,7 +52,7 @@ function App() {
   const [selectedCommentRow, setSelectedCommentRow] = useState(null)
   const [commentText, setCommentText] = useState('')
   const commentTimerRef = useRef(null)
-  const [cloudMasterData, setCloudMasterData] = useState({ names: new Set(), phones: new Set() })
+  const [cloudMasterData, setCloudMasterData] = useState({ names: new Set(), phones: new Set(), taggedLeads: [] })
   const [selectedLead, setSelectedLead] = useState(null)
 
   useEffect(() => {
@@ -79,12 +79,41 @@ function App() {
         if (result.taggedLeads) {
           const names = new Set(result.taggedLeads.map(l => (l.name || '').toLowerCase().trim()))
           const phones = new Set(result.taggedLeads.map(l => normalizePhone(l.phone)).filter(Boolean))
-          setCloudMasterData({ names, phones })
+          setCloudMasterData({ names, phones, taggedLeads: result.taggedLeads })
         }
       } catch (e) { /* ignore */ }
     }
     loadCloudMaster()
   }, [auth.loggedIn])
+
+  useEffect(() => {
+    if (!auth.loggedIn || !auth.masterSheetId || cloudMasterData.taggedLeads.length === 0) return
+    const syncPhones = async () => {
+      try {
+        const masterResult = await api.readMasterSheet(auth.masterSheetId)
+        if (masterResult.error || !masterResult.rows) return
+
+        const cloudPhoneMap = new Map()
+        cloudMasterData.taggedLeads.forEach(l => {
+          const key = (l.name || '').toLowerCase().trim()
+          if (key && l.phone) cloudPhoneMap.set(key, l.phone)
+        })
+
+        let fixed = 0
+        for (const row of masterResult.rows) {
+          const phone = (row.company_phone || '').trim()
+          const isCorrupted = !phone || phone.includes('ERROR') || !/^\d{10}$/.test(normalizePhone(phone))
+          if (!isCorrupted) continue
+          const cloudPhone = cloudPhoneMap.get((row.name || '').toLowerCase().trim())
+          if (!cloudPhone) continue
+          await api.updateMasterRow(auth.masterSheetId, { name: row.name, website: row.website }, 'company_phone', normalizePhone(cloudPhone))
+          fixed++
+        }
+        if (fixed > 0) addToast(`Fixed ${fixed} corrupted phone number${fixed > 1 ? 's' : ''} from Cloud Master`, 'success')
+      } catch (e) { /* ignore */ }
+    }
+    syncPhones()
+  }, [auth.loggedIn, auth.masterSheetId, cloudMasterData.taggedLeads.length])
 
   useEffect(() => {
     if (view === 'landing' && auth.loggedIn) {
