@@ -13,17 +13,9 @@ import AddLeadModal from './components/AddLeadModal'
 import { FaBell } from 'react-icons/fa'
 import { X, FileText, BarChart3, CheckCircle, AlertCircle, XCircle, Globe, Upload, Clock, Users } from 'lucide-react'
 import * as api from './services/api'
+import { normalizePhone } from './services/api'
 import * as storage from './services/storage'
 import { detectColumns, mapRowData } from './lib/excel'
-
-function normalizePhone(raw) {
-  if (!raw) return ''
-  let str = String(raw).trim()
-  if (str.startsWith('+91')) str = str.slice(3)
-  let digits = str.replace(/\D/g, '')
-  if (digits.length === 11 && digits.startsWith('0')) digits = digits.slice(1)
-  return digits.slice(-10)
-}
 
 let rowIdCounter = 0
 
@@ -268,7 +260,7 @@ function App() {
             query: row.query || '',
             name: row.name || '',
             website: row.website || '',
-            company_phone: row.company_phone || '',
+            company_phone: normalizePhone(row.company_phone),
             email: row.email || '',
             'Lead Status': tag === 'green' ? 'Good' : tag === 'yellow' ? 'Maybe' : tag === 'red' ? 'Bad' : '',
             Comments: ''
@@ -358,7 +350,10 @@ function App() {
       if (result.error) {
         addToast('Master sheet error: ' + result.error, 'error')
       } else if (result.rows) {
-        setMasterRows(result.rows)
+        setMasterRows(result.rows.map(r => ({
+          ...r,
+          company_phone: normalizePhone(r.company_phone)
+        })))
       }
     } catch (e) {
       addToast('Failed to read master sheet — check Apps Script deployment', 'error')
@@ -690,7 +685,7 @@ function App() {
                         <td className="font-medium">{row.name || '—'}</td>
                         <td className="text-muted">{row.query || '—'}</td>
                         <td className="text-muted">{row.website || '—'}</td>
-                        <td className="text-muted">{row.company_phone || '—'}</td>
+                        <td className="text-muted">{normalizePhone(row.company_phone) || '—'}</td>
                         <td className="text-muted">{row.email || '—'}</td>
                         <td>
                           {statusLabel ? (
@@ -797,10 +792,10 @@ function App() {
                       <a className="lead-detail-value lead-detail-link" href={selectedLead.website.startsWith('http') ? selectedLead.website : `https://${selectedLead.website}`} target="_blank" rel="noopener noreferrer">{selectedLead.website}</a>
                     </div>
                   )}
-                  {selectedLead.company_phone && (
+                  {selectedLead.company_phone && normalizePhone(selectedLead.company_phone) && (
                     <div className="lead-detail-field">
                       <span className="lead-detail-label">Phone</span>
-                      <span className="lead-detail-value">{selectedLead.company_phone}</span>
+                      <span className="lead-detail-value">{normalizePhone(selectedLead.company_phone)}</span>
                     </div>
                   )}
                   {selectedLead.email && (

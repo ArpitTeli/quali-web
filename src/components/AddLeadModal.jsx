@@ -1,13 +1,5 @@
 import React, { useState } from 'react'
-
-function normalizePhone(raw) {
-  if (!raw) return ''
-  let str = String(raw).trim()
-  if (str.startsWith('+91')) str = str.slice(3)
-  let digits = str.replace(/\D/g, '')
-  if (digits.length === 11 && digits.startsWith('0')) digits = digits.slice(1)
-  return digits.slice(-10)
-}
+import { normalizePhone } from '../services/api'
 
 function AddLeadModal({ onClose, onAdd }) {
   const [form, setForm] = useState({ name: '', website: '', company_phone: '', email: '', query: '' })
