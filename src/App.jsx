@@ -5,12 +5,13 @@ import SetupView from './components/SetupView'
 import LoginView from './components/LoginView'
 import BottomBar from './components/BottomBar'
 import { useToast } from './components/Toast'
-import ActivitiesCard from './components/right-panel/ActivitiesCard'
+import WorkTracker from './components/WorkTracker'
+import FileBrowser from './components/FileBrowser'
 import TodoList from './components/right-panel/TodoList'
 import MasterCard from './components/right-panel/MasterCard'
 import CompetitionWidget from './components/right-panel/CompetitionWidget'
 import AddLeadModal from './components/AddLeadModal'
-import { FaBell } from 'react-icons/fa'
+import { Monitor, Folder } from 'lucide-react'
 import { X, FileText, BarChart3, CheckCircle, AlertCircle, XCircle, Globe, Upload, Clock, Users } from 'lucide-react'
 import * as api from './services/api'
 import { normalizePhone } from './services/api'
@@ -54,6 +55,9 @@ function App() {
   const commentTimerRef = useRef(null)
   const [cloudMasterData, setCloudMasterData] = useState({ names: new Set(), phones: new Set(), taggedLeads: [] })
   const [selectedLead, setSelectedLead] = useState(null)
+  const [activeAssignment, setActiveAssignment] = useState(null)
+  const [ldsStats, setLdsStats] = useState({ totalFiles: 0, activeCount: 0, completedCount: 0 })
+  const progressTimerRef = useRef(null)
 
   useEffect(() => {
     allRowsRef.current = allRows
@@ -133,10 +137,42 @@ function App() {
           } catch (e) { /* ignore */ }
         }
         setActivities(storage.getActivities())
+        if (auth.uid) {
+          try {
+            const lds = await api.getLdsStats(auth.uid)
+            if (lds && !lds.error) setLdsStats(lds)
+          } catch (e) { /* ignore */ }
+        }
       }
       refresh()
     }
   }, [view, auth.loggedIn, auth.masterSheetId])
+
+  const saveProgressToServer = useCallback(async (assignmentId, rows) => {
+    if (!assignmentId) return
+    try {
+      await api.saveProgress(assignmentId, {
+        allRows: rows.map(r => ({ rowId: r.rowId, tag: r.tag, status: r.status })),
+        totalRows: rows.length,
+        savedAt: new Date().toISOString()
+      })
+    } catch (e) { /* ignore */ }
+  }, [])
+
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (activeAssignment && allRows.length > 0) {
+        const data = JSON.stringify({
+          assignmentId: activeAssignment.assignmentId,
+          allRows: allRows.map(r => ({ rowId: r.rowId, tag: r.tag, status: r.status })),
+          totalRows: allRows.length
+        })
+        localStorage.setItem('quali_lds_progress_' + activeAssignment.assignmentId, data)
+      }
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [activeAssignment, allRows])
 
   const handleLogin = useCallback(async ({ uid, password }) => {
     const result = await api.login(uid, password)
@@ -323,7 +359,15 @@ function App() {
         inBatch: newInBatch
       }
     })
-  }, [auth])
+
+    if (activeAssignment) {
+      if (progressTimerRef.current) clearTimeout(progressTimerRef.current)
+      progressTimerRef.current = setTimeout(() => {
+        const currentRows = allRowsRef.current.map(r => r.rowId === rowId ? { ...r, tag, status: 'processed' } : r)
+        saveProgressToServer(activeAssignment.assignmentId, currentRows)
+      }, 2000)
+    }
+  }, [auth, activeAssignment, saveProgressToServer])
 
   const handleNextBatch = useCallback(() => {
     const current = allRowsRef.current
@@ -349,7 +393,10 @@ function App() {
     }
   }, [batchSize])
 
-  const handleGoHome = useCallback(() => {
+  const handleGoHome = useCallback(async () => {
+    if (activeAssignment && allRows.length > 0) {
+      await saveProgressToServer(activeAssignment.assignmentId, allRows)
+    }
     setView('landing')
     setExcelData(null)
     excelDataRef.current = null
@@ -364,7 +411,122 @@ function App() {
     setIsComplete(false)
     setIsAdditional(false)
     setCloudMasterFiltered(0)
-  }, [])
+  }, [activeAssignment, allRows, saveProgressToServer])
+
+  const handleLdsClaim = useCallback(async (assignment, fileData, file) => {
+    try {
+      const binary = atob(fileData)
+      const bytes = new Uint8Array(binary.length)
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+      const wb = XLSX.read(bytes, { type: 'array' })
+      const sheets = {}
+      wb.SheetNames.forEach(name => {
+        sheets[name] = { data: XLSX.utils.sheet_to_json(wb.Sheets[name]) }
+      })
+      const sheetName = wb.SheetNames[0]
+      const detected = detectColumns(Object.keys(sheets[sheetName].data[0] || {}))
+
+      setExcelData({ sheets, sheetNames: wb.SheetNames })
+      excelDataRef.current = { sheets, sheetNames: wb.SheetNames }
+      setColumnMapping(detected)
+      setRowCount(sheets[sheetName].data.length)
+      setActiveAssignment(assignment)
+      setIsAdditional(false)
+      setView('setup')
+    } catch (e) {
+      addToast('Failed to parse file: ' + e.message, 'error')
+    }
+  }, [addToast])
+
+  const handleLdsResume = useCallback(async (assignment) => {
+    try {
+      const result = await api.loadProgress(assignment.assignmentId)
+      if (result.error) {
+        addToast('Failed to load progress: ' + result.error, 'error')
+        return
+      }
+
+      const binary = atob(result.fileData)
+      const bytes = new Uint8Array(binary.length)
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+      const wb = XLSX.read(bytes, { type: 'array' })
+      const sheets = {}
+      wb.SheetNames.forEach(name => {
+        sheets[name] = { data: XLSX.utils.sheet_to_json(wb.Sheets[name]) }
+      })
+      const sheetName = wb.SheetNames[0]
+      const detected = detectColumns(Object.keys(sheets[sheetName].data[0] || {}))
+
+      excelDataRef.current = { sheets, sheetNames: wb.SheetNames }
+      setExcelData({ sheets, sheetNames: wb.SheetNames })
+      setColumnMapping(detected)
+      setRowCount(sheets[sheetName].data.length)
+      setActiveAssignment(assignment)
+      setIsAdditional(false)
+
+      if (result.progressData && result.progressData.allRows) {
+        const mapping = detected
+        const fullRows = sheets[sheetName].data.map((r) => {
+          const mapped = mapRowData(r, mapping)
+          return {
+            ...mapped,
+            company_phone: normalizePhone(mapped.company_phone),
+            searchValue: mapped.name || '',
+            rowId: `row-${++rowIdCounter}`,
+            tag: null,
+            status: 'unprocessed'
+          }
+        })
+
+        const progressMap = {}
+        result.progressData.allRows.forEach(p => { progressMap[p.rowId] = p })
+
+        const restored = fullRows.map(r => {
+          const saved = progressMap[r.rowId]
+          if (saved) return { ...r, tag: saved.tag, status: saved.status || (saved.tag ? 'processed' : 'unprocessed') }
+          const byName = result.progressData.allRows.find(p => p.name === r.name && p.website === r.website)
+          if (byName && byName.tag) return { ...r, tag: byName.tag, status: 'processed' }
+          return r
+        })
+
+        const batchSlice = restored.filter(r => r.status === 'unprocessed').slice(0, batchSize)
+        const batchIds = new Set(batchSlice.map(r => r.rowId))
+        const updated = restored.map(r => batchIds.has(r.rowId) ? { ...r, status: 'in_batch' } : r)
+
+        setAllRows(updated)
+        allRowsRef.current = updated
+        setBatchRows(batchSlice)
+        const processed = updated.filter(r => r.status === 'processed' || r.tag).length
+        const remaining = updated.filter(r => r.status === 'unprocessed').length
+        setStats({ total: updated.length, processed, remaining, inBatch: batchSlice.length })
+        setIsComplete(remaining === 0)
+
+        if (batchSlice.length > 0) {
+          setActiveTab(batchSlice[0].rowId)
+          setSelectedLead(batchSlice[0])
+        }
+
+        setView('batch')
+        addToast(`Resumed ${result.progressData.allRows.filter(r => r.tag).length} tagged leads`, 'success')
+      } else {
+        setView('setup')
+      }
+    } catch (e) {
+      addToast('Failed to resume: ' + e.message, 'error')
+    }
+  }, [addToast, batchSize])
+
+  const handleAutoComplete = useCallback(async () => {
+    if (!activeAssignment) return
+    try {
+      await api.markSheetComplete(activeAssignment.assignmentId)
+      addToast('File completed!', 'success')
+      setActiveAssignment(null)
+      localStorage.removeItem('quali_lds_progress_' + activeAssignment.assignmentId)
+    } catch (e) {
+      addToast('Failed to mark complete', 'error')
+    }
+  }, [activeAssignment, addToast])
 
   const handleOpenMasterViewer = useCallback(async () => {
     setMasterLoading(true)
@@ -600,6 +762,20 @@ function App() {
                   </div>
                 }
               />
+              <MasterCard
+                icon={<Folder size={20} />}
+                title="Lead Queue"
+                stats={[
+                  { icon: <FileText size={14} />, label: 'Files', value: <span className="mc-stat-bold">{ldsStats.totalFiles}</span> },
+                  { icon: <Clock size={14} />, label: 'Active', value: <span className="mc-stat-bold">{ldsStats.activeCount}</span> },
+                  { icon: <CheckCircle size={14} />, label: 'Completed', value: <span className="mc-stat-bold">{ldsStats.completedCount}</span> },
+                ]}
+                actions={
+                  <div className="mc-btn-row">
+                    <button className="mc-btn mc-btn-primary" onClick={() => setView('filebrowser')}>Browse Files</button>
+                  </div>
+                }
+              />
             </div>
             <div className="landing-upload">
               <FilePicker onFileLoad={handleFileLoad} />
@@ -611,11 +787,9 @@ function App() {
             />
           </div>
           <div className="landing-right">
-            <ActivitiesCard
-              headerIcon={<FaBell size={22} />}
-              title="Notifications"
-              subtitle="Recent activity"
-              activities={activities}
+            <WorkTracker
+              onResume={handleLdsResume}
+              userId={auth.uid}
             />
             <div className="landing-right-bottom">
               <TodoList />
@@ -877,12 +1051,39 @@ function App() {
               <p>You have reviewed all {stats.total} leads.</p>
               <div className="completion-actions">
                 <button className="btn btn-primary" onClick={handleExport}>Export Results</button>
+                {activeAssignment && (
+                  <button className="btn btn-primary" onClick={() => { handleAutoComplete(); handleGoHome() }}>Complete & Go Home</button>
+                )}
                 <button className="btn btn-secondary" onClick={handleAddFile}>Add Another File</button>
-                <button className="btn btn-secondary" onClick={handleGoHome}>Start New Session</button>
+                <button className="btn btn-secondary" onClick={() => { if (activeAssignment) handleAutoComplete(); handleGoHome() }}>Start New Session</button>
               </div>
             </div>
           </div>
         )}
+        <ToastContainer />
+      </div>
+    )
+  }
+
+  if (view === 'filebrowser') {
+    return (
+      <div className="app">
+        <header className="app-header">
+          <h1>Quali</h1>
+          <p className="app-subtitle">Lead Files</p>
+          <div className="header-user">
+            <span className="header-username">{auth.displayName}</span>
+            <button className="btn-logout" onClick={handleLogout}>Logout</button>
+          </div>
+        </header>
+        <main className="app-main">
+          <FileBrowser
+            userId={auth.uid}
+            onClaim={handleLdsClaim}
+            onResume={handleLdsResume}
+            onBack={() => setView('landing')}
+          />
+        </main>
         <ToastContainer />
       </div>
     )

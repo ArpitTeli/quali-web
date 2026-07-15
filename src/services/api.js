@@ -5,6 +5,9 @@ const PUSH_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbykxuCQoi6WnnTX
 // Per-user master sheet Apps Script
 const MASTER_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw4mIswXp7eGcze1rb8QWWY8Wi7Q2tw1gwc_Q-f5YAtwVoIoByrLHaY39QvsWxpPNU9/exec'
 
+// LDS (Lead Distribution System) Apps Script
+const LDS_SCRIPT_URL = 'REPLACE_WITH_LDS_URL'
+
 async function post(url, body) {
   const res = await fetch(url, {
     method: 'POST',
@@ -65,6 +68,30 @@ export async function cloudMasterDebug() {
   return post(CLOUD_MASTER_URL, { action: 'getTaggedNames' })
 }
 
+export async function getFileTree(userId) {
+  return post(LDS_SCRIPT_URL, { action: 'getFileTree', userId })
+}
+
+export async function claimFile(userId, fileId) {
+  return post(LDS_SCRIPT_URL, { action: 'claimFile', userId, fileId })
+}
+
+export async function saveProgress(assignmentId, progressData) {
+  return post(LDS_SCRIPT_URL, { action: 'saveProgress', assignmentId, progressData })
+}
+
+export async function loadProgress(assignmentId) {
+  return post(LDS_SCRIPT_URL, { action: 'loadProgress', assignmentId })
+}
+
+export async function markSheetComplete(assignmentId) {
+  return post(LDS_SCRIPT_URL, { action: 'markComplete', assignmentId })
+}
+
+export async function getLdsStats(userId) {
+  return post(LDS_SCRIPT_URL, { action: 'getQueueStats', userId })
+}
+
 function normalizePhone(raw) {
   if (!raw) return ''
   let str = String(raw).trim()
@@ -74,4 +101,4 @@ function normalizePhone(raw) {
   return digits.slice(-10)
 }
 
-export { CLOUD_MASTER_URL, AUTH_SCRIPT_URL, PUSH_SCRIPT_URL, MASTER_SCRIPT_URL, normalizePhone }
+export { CLOUD_MASTER_URL, AUTH_SCRIPT_URL, PUSH_SCRIPT_URL, MASTER_SCRIPT_URL, LDS_SCRIPT_URL, normalizePhone }
