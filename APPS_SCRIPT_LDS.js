@@ -32,7 +32,32 @@ function doPost(e) {
 }
 
 function doGet(e) {
-  return ContentService.createTextOutput('Quali LDS API — Use POST')
+  try {
+    var folder = DriveApp.getFolderById(FOLDER_ID)
+    var files = folder.getFiles()
+    var count = 0
+    var names = []
+    while (files.hasNext() && count < 5) {
+      var f = files.next()
+      names.push(f.getName() + ' (' + f.getMimeType() + ')')
+      count++
+    }
+    var folders = folder.getFolders()
+    var folderCount = 0
+    var folderNames = []
+    while (folders.hasNext() && folderCount < 5) {
+      folderNames.push(folders.next().getName())
+      folderCount++
+    }
+    return ContentService.createTextOutput(
+      'Files found: ' + count + '\n' +
+      'First 5: ' + names.join(', ') + '\n' +
+      'Subfolders: ' + folderCount + '\n' +
+      'Folder names: ' + folderNames.join(', ')
+    )
+  } catch (err) {
+    return ContentService.createTextOutput('ERROR: ' + err.message)
+  }
 }
 
 // ===== Helpers =====
@@ -88,8 +113,10 @@ function handleGetFileTree(body) {
   var userId = body.userId
   if (!userId) return json({ error: 'Missing userId' })
 
-  var files = scanDriveFolder()
-  var syncResult = syncFilesToSheet(files)
+  var scanResult = scanDriveFolder()
+  if (scanResult.error) return json({ error: scanResult.error })
+
+  var syncResult = syncFilesToSheet(scanResult.files)
   var assignments = getUserAssignments(userId)
   var tree = buildTree(syncResult.sheetFiles, assignments)
 
@@ -101,9 +128,9 @@ function scanDriveFolder() {
     var folder = DriveApp.getFolderById(FOLDER_ID)
     var files = []
     scanFolder(folder, '', files)
-    return files
+    return { files: files, error: null }
   } catch (err) {
-    return []
+    return { files: [], error: 'Drive access failed: ' + err.message }
   }
 }
 
