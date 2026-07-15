@@ -152,7 +152,7 @@ function App() {
     if (!assignmentId) return
     try {
       await api.saveProgress(assignmentId, {
-        allRows: rows.map(r => ({ rowId: r.rowId, tag: r.tag, status: r.status })),
+        allRows: rows.map(r => ({ rowId: r.rowId, tag: r.tag, status: r.status, name: r.name || '', website: r.website || '' })),
         totalRows: rows.length,
         savedAt: new Date().toISOString()
       })
@@ -164,7 +164,7 @@ function App() {
       if (activeAssignment && allRows.length > 0) {
         const data = JSON.stringify({
           assignmentId: activeAssignment.assignmentId,
-          allRows: allRows.map(r => ({ rowId: r.rowId, tag: r.tag, status: r.status })),
+          allRows: allRows.map(r => ({ rowId: r.rowId, tag: r.tag, status: r.status, name: r.name || '', website: r.website || '' })),
           totalRows: allRows.length
         })
         localStorage.setItem('quali_lds_progress_' + activeAssignment.assignmentId, data)
@@ -511,13 +511,15 @@ function App() {
         })
 
         const progressMap = {}
-        result.progressData.allRows.forEach(p => { progressMap[p.rowId] = p })
+        result.progressData.allRows.forEach(p => {
+          const key = ((p.name || '').toLowerCase().trim() + '|' + (p.website || '').toLowerCase().trim())
+          if (key !== '|') progressMap[key] = p
+        })
 
         const restored = fullRows.map(r => {
-          const saved = progressMap[r.rowId]
-          if (saved) return { ...r, tag: saved.tag, status: saved.status || (saved.tag ? 'processed' : 'unprocessed') }
-          const byName = result.progressData.allRows.find(p => p.name === r.name && p.website === r.website)
-          if (byName && byName.tag) return { ...r, tag: byName.tag, status: 'processed' }
+          const key = ((r.name || '').toLowerCase().trim() + '|' + (r.website || '').toLowerCase().trim())
+          const saved = progressMap[key]
+          if (saved && saved.tag) return { ...r, tag: saved.tag, status: 'processed' }
           return r
         })
 
