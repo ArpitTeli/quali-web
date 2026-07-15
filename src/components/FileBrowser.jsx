@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Folder, File, ChevronRight, ChevronDown } from 'lucide-react'
 import * as api from '../services/api'
-import { downloadExcelFile } from '../lib/download'
 
 function buildTree(files) {
   const root = []
@@ -196,9 +195,6 @@ export default function FileBrowser({ onClaim, onBack, userId }) {
         setError(result.error)
       } else {
         try {
-          if (result.fileData) {
-            downloadExcelFile(result.fileData, file.filename || file._cleanName || 'leads.xlsx')
-          }
           onClaim(result.assignment, result.fileData, file)
         } catch (e) {
           console.error('[FileBrowser] onClaim error:', e)

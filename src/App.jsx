@@ -453,6 +453,125 @@ function App() {
     }
   }, [addToast])
 
+  const handleLdsResume = useCallback(async (assignment) => {
+    try {
+      if (!assignment || !assignment.assignmentId) {
+        addToast('Invalid assignment data', 'error')
+        return
+      }
+      const result = await api.loadProgress(assignment.assignmentId)
+      if (result.error) {
+        addToast('Failed to load progress: ' + result.error, 'error')
+        return
+      }
+
+      if (!result.fileData) {
+        addToast('No file data found for this assignment', 'error')
+        return
+      }
+
+      let binary
+      try {
+        binary = atob(result.fileData)
+      } catch (e) {
+        addToast('Corrupted file data — cannot decode', 'error')
+        return
+      }
+      const bytes = new Uint8Array(binary.length)
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+      let wb
+      try {
+        wb = XLSX.read(bytes, { type: 'array' })
+      } catch (e) {
+        addToast('Cannot parse Excel file: ' + e.message, 'error')
+        return
+      }
+      if (!wb.SheetNames || wb.SheetNames.length === 0) {
+        addToast('Excel file has no sheets', 'error')
+        return
+      }
+      const sheets = {}
+      wb.SheetNames.forEach(name => {
+        const data = XLSX.utils.sheet_to_json(wb.Sheets[name])
+        sheets[name] = { data, headers: data.length > 0 ? Object.keys(data[0]) : [] }
+      })
+      const sheetName = wb.SheetNames[0]
+      const firstRow = sheets[sheetName].data[0]
+      if (!firstRow) {
+        addToast('Excel sheet is empty', 'error')
+        return
+      }
+      const detected = detectColumns(sheets[sheetName].headers)
+
+      excelDataRef.current = { sheets, sheetNames: wb.SheetNames }
+      setExcelData({ sheets, sheetNames: wb.SheetNames })
+      setColumnMapping(detected)
+      setRowCount(sheets[sheetName].data.length)
+      setActiveAssignment(assignment)
+      setIsAdditional(false)
+
+      const hasProgress = result.progressData && Array.isArray(result.progressData.allRows) && result.progressData.allRows.length > 0
+
+      if (hasProgress) {
+        const fullRows = sheets[sheetName].data.map((r) => {
+          const mapped = mapRowData(r, detected)
+          return {
+            ...mapped,
+            company_phone: normalizePhone(mapped.company_phone),
+            searchValue: mapped.name || '',
+            rowId: `row-${++rowIdCounter}`,
+            tag: null,
+            status: 'unprocessed'
+          }
+        })
+
+        const progressMap = {}
+        result.progressData.allRows.forEach(p => {
+          const key = ((p.name || '').toLowerCase().trim() + '|' + (p.website || '').toLowerCase().trim())
+          if (key !== '|') progressMap[key] = p
+        })
+
+        const restored = fullRows.map(r => {
+          const key = ((r.name || '').toLowerCase().trim() + '|' + (r.website || '').toLowerCase().trim())
+          const saved = progressMap[key]
+          if (saved && saved.tag) return { ...r, tag: saved.tag, status: 'processed' }
+          return r
+        })
+
+        const batchSlice = restored.filter(r => r.status === 'unprocessed').slice(0, batchSize)
+        const batchIds = new Set(batchSlice.map(r => r.rowId))
+        const updated = restored.map(r => batchIds.has(r.rowId) ? { ...r, status: 'in_batch' } : r)
+
+        const processed = updated.filter(r => r.status === 'processed' || r.tag).length
+        const remaining = updated.filter(r => r.status === 'unprocessed').length
+        const taggedCount = result.progressData.allRows.filter(r => r.tag).length
+
+        setAllRows(updated)
+        allRowsRef.current = updated
+        setBatchRows(batchSlice)
+        setStats({ total: updated.length, processed, remaining, inBatch: batchSlice.length })
+        setIsComplete(remaining === 0)
+        setCloudMasterFiltered(0)
+
+        if (batchSlice.length > 0) {
+          setActiveTab(batchSlice[0].rowId)
+          setSelectedLead(batchSlice[0])
+        } else {
+          setActiveTab(null)
+          setSelectedLead(null)
+        }
+
+        setView('batch')
+        addToast(`Resumed — ${taggedCount} leads already tagged`, 'success')
+      } else {
+        setView('setup')
+      }
+    } catch (e) {
+      console.error('[LDS Resume]', e)
+      addToast('Failed to resume: ' + e.message, 'error')
+    }
+  }, [addToast, batchSize])
+
   const handleAutoComplete = useCallback(async () => {
     if (!activeAssignment) return
     try {
@@ -725,6 +844,7 @@ function App() {
           </div>
           <div className="landing-right">
             <WorkTracker
+              onResume={handleLdsResume}
               userId={auth.uid}
             />
             <div className="landing-right-bottom">

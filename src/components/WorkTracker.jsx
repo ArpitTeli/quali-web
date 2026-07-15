@@ -3,11 +3,12 @@ import { motion, AnimatePresence } from 'motion/react'
 import { Monitor } from 'lucide-react'
 import * as api from '../services/api'
 
-export default function WorkTracker({ userId }) {
+export default function WorkTracker({ onResume, userId }) {
   const [tab, setTab] = useState('ongoing')
   const [assignments, setAssignments] = useState([])
   const [loading, setLoading] = useState(true)
   const [open, setOpen] = useState(false)
+  const [resuming, setResuming] = useState(null)
 
   function loadAssignments() {
     if (!userId) return
@@ -23,6 +24,11 @@ export default function WorkTracker({ userId }) {
   useEffect(() => {
     if (open) loadAssignments()
   }, [open, userId])
+
+  function handleResume(assignment) {
+    setResuming(assignment.assignmentId)
+    onResume(assignment).finally(() => setResuming(null))
+  }
 
   const safeAssignments = Array.isArray(assignments) ? assignments : []
   const ongoing = safeAssignments.filter(a => a.status === 'Active' && !a.completedAt)
@@ -94,19 +100,25 @@ export default function WorkTracker({ userId }) {
                 </div>
               ) : (
                 current.map((a, i) => (
-                  <div
+                  <motion.button
                     key={a.assignmentId || i}
-                    className="wt-item"
+                    className={`wt-item ${tab === 'ongoing' ? 'wt-item-clickable' : ''}`}
+                    onClick={() => tab === 'ongoing' && handleResume(a)}
+                    whileHover={tab === 'ongoing' ? { backgroundColor: 'rgba(255,255,255,0.04)' } : {}}
+                    disabled={resuming === a.assignmentId}
                   >
                     <span className="wt-dot" style={{ background: tab === 'ongoing' ? '#4ade80' : '#71717a' }} />
                     <span className="wt-item-name">{a.filename || a.fileId?.substring(0, 8) || 'Unknown'}</span>
                     {tab === 'ongoing' && (
-                      <span className="wt-item-status">Active</span>
+                      <span className="wt-item-progress">
+                        {resuming === a.assignmentId ? 'Loading...' :
+                          a.totalRows > 0 ? `${a.taggedCount}/${a.totalRows}` : 'New'}
+                      </span>
                     )}
                     {tab === 'closed' && (
                       <span className="wt-item-status" style={{ color: '#4ade80' }}>Done</span>
                     )}
-                  </div>
+                  </motion.button>
                 ))
               )}
             </div>

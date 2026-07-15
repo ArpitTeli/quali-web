@@ -209,6 +209,16 @@ function getUserAssignments(userId) {
   for (var i = 1; i < data.length; i++) {
     if (String(data[i][2] || '').trim() === userId) {
       var fileId = String(data[i][1] || '').trim()
+      var taggedCount = 0
+      var totalRows = 0
+      var progressStr = String(data[i][6] || '')
+      if (progressStr) {
+        try {
+          var progress = JSON.parse(progressStr)
+          totalRows = progress.totalRows || 0
+          taggedCount = (progress.allRows || []).filter(function(r) { return r.tag }).length
+        } catch (e) {}
+      }
       result.push({
         assignmentId: String(data[i][0] || ''),
         fileId: fileId,
@@ -217,6 +227,8 @@ function getUserAssignments(userId) {
         completedAt: String(data[i][4] || ''),
         status: String(data[i][5] || ''),
         filename: fileMap[fileId] || '',
+        taggedCount: taggedCount,
+        totalRows: totalRows,
         row: i + 1
       })
     }
