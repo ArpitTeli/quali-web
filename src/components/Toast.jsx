@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 
 let toastId = 0
 
@@ -21,20 +21,31 @@ export function useToast() {
 
   const addToast = useCallback((message, type = 'info') => {
     const id = ++toastId
-    setToasts(prev => [...prev, { id, message, type }])
+    setToasts(prev => {
+      const next = Array.isArray(prev) ? prev : []
+      return [...next, { id, message, type }]
+    })
   }, [])
 
   const removeToast = useCallback((id) => {
-    setToasts(prev => prev.filter(t => t.id !== id))
+    setToasts(prev => {
+      const next = Array.isArray(prev) ? prev : []
+      return next.filter(t => t.id !== id)
+    })
   }, [])
 
-  const ToastContainer = () => (
-    <div className="toast-container">
-      {toasts.map(t => (
-        <Toast key={t.id} message={t.message} type={t.type} onClose={() => removeToast(t.id)} />
-      ))}
-    </div>
-  )
+  const ToastContainer = useMemo(() => {
+    return function ToastContainerInner() {
+      const safeToasts = Array.isArray(toasts) ? toasts : []
+      return (
+        <div className="toast-container">
+          {safeToasts.map(t => (
+            <Toast key={t.id} message={t.message} type={t.type} onClose={() => removeToast(t.id)} />
+          ))}
+        </div>
+      )
+    }
+  }, [toasts, removeToast])
 
   return { addToast, ToastContainer }
 }

@@ -1017,9 +1017,17 @@ function App() {
   }
 
   if (view === 'batch') {
-    const taggedCount = batchRows.filter(r => r.tag).length
-    const allTagged = batchRows.length > 0 && taggedCount === batchRows.length
-    const hasUnprocessed = allRows.some(r => r.status === 'unprocessed')
+    const safeBatchRows = Array.isArray(batchRows) ? batchRows : []
+    const safeAllRows = Array.isArray(allRows) ? allRows : []
+    const safeStats = stats || { total: 0, processed: 0, remaining: 0, inBatch: 0 }
+    const safeSelectedLead = selectedLead || null
+    const safeActiveTab = activeTab || null
+    const safeIsComplete = !!isComplete
+    const safeActiveAssignment = activeAssignment || null
+    const safeCloudMasterFiltered = cloudMasterFiltered || 0
+    const taggedCount = safeBatchRows.filter(r => r && r.tag).length
+    const allTagged = safeBatchRows.length > 0 && taggedCount === safeBatchRows.length
+    const hasUnprocessed = safeAllRows.some(r => r && r.status === 'unprocessed')
 
     return (
       <div className="app">
