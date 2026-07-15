@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react'
 import { Monitor } from 'lucide-react'
 import * as api from '../services/api'
 
-export default function WorkTracker({ onResume, userId }) {
+export default function WorkTracker({ userId }) {
   const [tab, setTab] = useState('ongoing')
   const [assignments, setAssignments] = useState([])
   const [loading, setLoading] = useState(true)
@@ -94,21 +94,19 @@ export default function WorkTracker({ onResume, userId }) {
                 </div>
               ) : (
                 current.map((a, i) => (
-                  <motion.button
+                  <div
                     key={a.assignmentId || i}
                     className="wt-item"
-                    onClick={() => tab === 'ongoing' && onResume(a)}
-                    whileHover={tab === 'ongoing' ? { backgroundColor: 'rgba(255,255,255,0.04)' } : {}}
                   >
                     <span className="wt-dot" style={{ background: tab === 'ongoing' ? '#4ade80' : '#71717a' }} />
-                    <span className="wt-item-name">{a.fileId?.substring(0, 8) || 'Unknown'}</span>
+                    <span className="wt-item-name">{a.filename || a.fileId?.substring(0, 8) || 'Unknown'}</span>
                     {tab === 'ongoing' && (
                       <span className="wt-item-status">Active</span>
                     )}
                     {tab === 'closed' && (
                       <span className="wt-item-status" style={{ color: '#4ade80' }}>Done</span>
                     )}
-                  </motion.button>
+                  </div>
                 ))
               )}
             </div>

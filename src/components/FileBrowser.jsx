@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { Folder, File, ChevronRight, ChevronDown, Monitor } from 'lucide-react'
+import { Folder, File, ChevronRight, ChevronDown } from 'lucide-react'
 import * as api from '../services/api'
+import { downloadExcelFile } from '../lib/download'
 
 function buildTree(files) {
   const root = []
@@ -71,23 +72,16 @@ function getFileStatus(file, assignments) {
   const myAssignment = getAssignmentForFile(file.fileId, assignments)
   if (myAssignment) {
     if (myAssignment.completedAt) return { type: 'completed', label: 'Completed', color: '#4ade80' }
-    const progress = file._progress || null
-    if (progress) {
-      const tagged = progress.allRows ? progress.allRows.filter(r => r.tag).length : 0
-      const total = progress.allRows ? progress.allRows.length : 0
-      return { type: 'yours', label: `${tagged}/${total}`, color: '#60a5fa', assignment: myAssignment }
-    }
-    return { type: 'yours', label: 'Yours', color: '#60a5fa', assignment: myAssignment }
+    return { type: 'yours', label: 'Claimed ✓', color: '#60a5fa' }
   }
   const otherAssignment = assignments ? assignments.find(a => a.fileId === file.fileId && a.status === 'Active') : null
   if (otherAssignment) return { type: 'assigned', label: 'Assigned', color: '#facc15' }
   return { type: 'available', label: 'Available', color: '#71717a' }
 }
 
-function FileNode({ file, assignments, onClaim, onResume, claimLoading }) {
+function FileNode({ file, assignments, onClaim, claimLoading }) {
   const status = getFileStatus(file, assignments)
   const canClaim = status.type === 'available'
-  const canResume = status.type === 'yours'
 
   return (
     <div className="fb-file-row">
@@ -105,19 +99,11 @@ function FileNode({ file, assignments, onClaim, onResume, claimLoading }) {
           {claimLoading === file.fileId ? 'Loading...' : 'Claim'}
         </button>
       )}
-      {canResume && (
-        <button
-          className="fb-btn fb-btn-resume"
-          onClick={() => onResume(status.assignment)}
-        >
-          Resume
-        </button>
-      )}
     </div>
   )
 }
 
-function TreeNode({ node, depth, expanded, toggle, assignments, onClaim, onResume, claimLoading }) {
+function TreeNode({ node, depth, expanded, toggle, assignments, onClaim, claimLoading }) {
   const isExpanded = expanded.has(node.path)
   const hasItems = node.children.length > 0 || node.files.length > 0
 
@@ -148,7 +134,6 @@ function TreeNode({ node, depth, expanded, toggle, assignments, onClaim, onResum
               toggle={toggle}
               assignments={assignments}
               onClaim={onClaim}
-              onResume={onResume}
               claimLoading={claimLoading}
             />
           ))}
@@ -158,7 +143,6 @@ function TreeNode({ node, depth, expanded, toggle, assignments, onClaim, onResum
               file={f}
               assignments={assignments}
               onClaim={onClaim}
-              onResume={onResume}
               claimLoading={claimLoading}
             />
           ))}
@@ -168,7 +152,7 @@ function TreeNode({ node, depth, expanded, toggle, assignments, onClaim, onResum
   )
 }
 
-export default function FileBrowser({ onClaim, onResume, onBack, userId }) {
+export default function FileBrowser({ onClaim, onBack, userId }) {
   const [tree, setTree] = useState([])
   const [assignments, setAssignments] = useState([])
   const [loading, setLoading] = useState(true)
@@ -212,6 +196,9 @@ export default function FileBrowser({ onClaim, onResume, onBack, userId }) {
         setError(result.error)
       } else {
         try {
+          if (result.fileData) {
+            downloadExcelFile(result.fileData, file.filename || file._cleanName || 'leads.xlsx')
+          }
           onClaim(result.assignment, result.fileData, file)
         } catch (e) {
           console.error('[FileBrowser] onClaim error:', e)
@@ -223,15 +210,6 @@ export default function FileBrowser({ onClaim, onResume, onBack, userId }) {
       setError('Failed to claim file')
       setClaimLoading(null)
     })
-  }
-
-  function handleResume(assignment) {
-    try {
-      onResume(assignment)
-    } catch (e) {
-      console.error('[FileBrowser] onResume error:', e)
-      setError('Failed to load file: ' + e.message)
-    }
   }
 
   return (
@@ -286,7 +264,6 @@ export default function FileBrowser({ onClaim, onResume, onBack, userId }) {
                 toggle={toggle}
                 assignments={assignments}
                 onClaim={handleClaim}
-                onResume={handleResume}
                 claimLoading={claimLoading}
               />
             ))

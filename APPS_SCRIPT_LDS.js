@@ -197,17 +197,26 @@ function syncFilesToSheet(driveFiles) {
 function getUserAssignments(userId) {
   var sheet = getAssignmentsSheet()
   var data = sheet.getDataRange().getValues()
-  var result = []
+  var filesSheet = getFilesSheet()
+  var filesData = filesSheet.getDataRange().getValues()
 
+  var fileMap = {}
+  for (var f = 1; f < filesData.length; f++) {
+    fileMap[String(filesData[f][0] || '').trim()] = String(filesData[f][1] || '')
+  }
+
+  var result = []
   for (var i = 1; i < data.length; i++) {
     if (String(data[i][2] || '').trim() === userId) {
+      var fileId = String(data[i][1] || '').trim()
       result.push({
         assignmentId: String(data[i][0] || ''),
-        fileId: String(data[i][1] || ''),
+        fileId: fileId,
         userId: String(data[i][2] || ''),
         assignedAt: String(data[i][3] || ''),
         completedAt: String(data[i][4] || ''),
         status: String(data[i][5] || ''),
+        filename: fileMap[fileId] || '',
         row: i + 1
       })
     }
