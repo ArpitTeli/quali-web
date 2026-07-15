@@ -3044,9 +3044,10 @@ body {
 .wheel-and-hamster {
   --dur: 1s;
   position: relative;
-  width: 8em;
-  height: 8em;
-  font-size: 14px;
+  width: 12em;
+  height: 12em;
+  font-size: 10px;
+  overflow: visible;
 }
 
 .wheel,
