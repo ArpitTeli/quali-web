@@ -1,4 +1,4 @@
-const AUTH_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwA-a6d9a2tu9vDoKX3Yc2XN6sX5eLAzI_fo0xrpC8mRnkYlvFPSHSxoTWKAeZcpFxbww/exec'
+const AUTH_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwSiaVgUWKr0N_IRJzeWU04c9fctHBfZp8DDTiXdAssYhLjQ7B5wiqtOZfRbEOVKSF7sA/exec'
 const CLOUD_MASTER_URL = 'https://script.google.com/macros/s/AKfycbxzMPAp73lSht16-PnmKh1Z4jD2t4a7Ma3fauAKbkmN4w6g_pqPvVD6xruK5ZeQTEBs3g/exec'
 const PUSH_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwnHEf1fq1MikibZfN8dpZuXCWmZX4kxBg2VMDulm4809X7BGWRrhlGdCaD3VwXTYQD/exec'
 
