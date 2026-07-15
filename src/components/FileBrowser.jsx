@@ -211,9 +211,15 @@ export default function FileBrowser({ onClaim, onResume, onBack, userId }) {
       if (result.error) {
         setError(result.error)
       } else {
-        onClaim(result.assignment, result.fileData, file)
+        try {
+          onClaim(result.assignment, result.fileData, file)
+        } catch (e) {
+          console.error('[FileBrowser] onClaim error:', e)
+          setError('Failed to load file: ' + e.message)
+        }
       }
-    }).catch(() => {
+    }).catch(e => {
+      console.error('[FileBrowser] claimFile error:', e)
       setError('Failed to claim file')
       setClaimLoading(null)
     })
