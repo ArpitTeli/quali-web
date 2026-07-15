@@ -88,8 +88,8 @@ function getFilesSheet() {
 function getAssignmentsSheet() {
   var sheet = getSheet('LDS_Assignments')
   if (sheet.getLastRow() === 0) {
-    sheet.getRange(1, 1, 1, 8).setValues([['AssignmentID', 'FileID', 'UserID', 'AssignedAt', 'CompletedAt', 'Status', 'ProgressData', 'FileData']])
-    sheet.getRange(1, 1, 1, 8).setFontWeight('bold')
+    sheet.getRange(1, 1, 1, 9).setValues([['AssignmentID', 'FileID', 'UserID', 'AssignedAt', 'CompletedAt', 'Status', 'ProgressData', 'FileData', 'Filename']])
+    sheet.getRange(1, 1, 1, 9).setFontWeight('bold')
   }
   return sheet
 }
@@ -197,13 +197,6 @@ function syncFilesToSheet(driveFiles) {
 function getUserAssignments(userId) {
   var sheet = getAssignmentsSheet()
   var data = sheet.getDataRange().getValues()
-  var filesSheet = getFilesSheet()
-  var filesData = filesSheet.getDataRange().getValues()
-
-  var fileMap = {}
-  for (var f = 1; f < filesData.length; f++) {
-    fileMap[String(filesData[f][0] || '').trim()] = String(filesData[f][1] || '')
-  }
 
   var result = []
   for (var i = 1; i < data.length; i++) {
@@ -226,7 +219,7 @@ function getUserAssignments(userId) {
         assignedAt: String(data[i][3] || ''),
         completedAt: String(data[i][4] || ''),
         status: String(data[i][5] || ''),
-        filename: fileMap[fileId] || '',
+        filename: String(data[i][8] || '') || fileId,
         taggedCount: taggedCount,
         totalRows: totalRows,
         row: i + 1
@@ -342,6 +335,7 @@ function handleClaimFile(body) {
     return json({ error: 'File not found in Drive' })
   }
 
+  var fileName = file.getName()
   var blob = file.getBlob()
   var bytes = blob.getBytes()
   var fileData = Utilities.base64Encode(bytes)
@@ -357,7 +351,8 @@ function handleClaimFile(body) {
     '',
     'Active',
     '',
-    fileData
+    fileData,
+    fileName
   ])
 
   // Trash file from Google Drive

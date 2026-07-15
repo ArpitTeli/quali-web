@@ -394,6 +394,7 @@ function App() {
   }, [batchSize])
 
   const handleGoHome = useCallback(async () => {
+    if (progressTimerRef.current) clearTimeout(progressTimerRef.current)
     if (activeAssignment && allRows.length > 0) {
       await saveProgressToServer(activeAssignment.assignmentId, allRows)
     }
@@ -411,6 +412,7 @@ function App() {
     setIsComplete(false)
     setIsAdditional(false)
     setCloudMasterFiltered(0)
+    setActiveAssignment(null)
   }, [activeAssignment, allRows, saveProgressToServer])
 
   const handleLdsClaim = useCallback(async (assignment, fileData, file) => {
@@ -1097,8 +1099,8 @@ function App() {
             )}
           </div>
           <BottomBar
-            batchRows={batchRows}
-            stats={stats}
+            batchRows={safeBatchRows}
+            stats={safeStats}
             activeRow={activeTab}
             onRowClick={handleRowClick}
             onTag={handleTag}
