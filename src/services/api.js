@@ -6,7 +6,7 @@ const PUSH_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbykxuCQoi6WnnTX
 const MASTER_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw4mIswXp7eGcze1rb8QWWY8Wi7Q2tw1gwc_Q-f5YAtwVoIoByrLHaY39QvsWxpPNU9/exec'
 
 // LDS (Lead Distribution System) Apps Script
-const LDS_SCRIPT_URL = 'REPLACE_WITH_LDS_URL'
+const LDS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyI7yzwFBqMq1xGA9sWPdHVYN1KBC7nTLrf2kr7wSH0lKNakBqQjsmdQKOGg_Y6YfJPmw/exec'
 
 async function post(url, body) {
   const res = await fetch(url, {
