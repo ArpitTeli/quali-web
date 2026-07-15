@@ -3277,6 +3277,10 @@ body {
   transition: border-color 0.3s;
 }
 
+.wt-card-open .wt-header {
+  cursor: default;
+}
+
 .wt-card:hover {
   border-color: rgba(255,255,255,0.15);
 }

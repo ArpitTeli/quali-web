@@ -1,20 +1,18 @@
 import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'motion/react'
+import { motion } from 'motion/react'
 import { Monitor } from 'lucide-react'
 import * as api from '../services/api'
 
 export default function WorkTracker({ onResume, userId }) {
-  const [tab, setTab] = useState('ongoing')
+  const [tab, setTab] = useState('all')
   const [assignments, setAssignments] = useState([])
   const [loading, setLoading] = useState(true)
-  const [open, setOpen] = useState(false)
   const [resuming, setResuming] = useState(null)
 
   function loadAssignments() {
     if (!userId) return
     setLoading(true)
     api.getFileTree(userId).then(result => {
-      console.log('[WorkTracker] assignments:', result.assignments)
       if (result.assignments && Array.isArray(result.assignments)) {
         setAssignments(result.assignments)
       }
@@ -22,9 +20,7 @@ export default function WorkTracker({ onResume, userId }) {
     }).catch(() => setLoading(false))
   }
 
-  useEffect(() => {
-    if (open) loadAssignments()
-  }, [open, userId])
+  useEffect(() => { loadAssignments() }, [userId])
 
   function handleResume(assignment) {
     setResuming(assignment.assignmentId)
@@ -34,98 +30,83 @@ export default function WorkTracker({ onResume, userId }) {
   const safeAssignments = Array.isArray(assignments) ? assignments : []
   const ongoing = safeAssignments.filter(a => a.status === 'Active' && !a.completedAt)
   const closed = safeAssignments.filter(a => a.status === 'Completed' || a.completedAt)
-  const current = tab === 'ongoing' ? ongoing : closed
+  const all = safeAssignments
+  const current = tab === 'all' ? all : tab === 'ongoing' ? ongoing : closed
+
+  function isOngoing(a) { return a.status === 'Active' && !a.completedAt }
 
   return (
-    <motion.div layout className="wt-card">
-      <motion.button onClick={() => setOpen(!open)} className="wt-header">
+    <div className="wt-card wt-card-open">
+      <div className="wt-header">
         <div className="wt-header-left">
-          <motion.div
-            animate={{ width: open ? 40 : 52, height: open ? 40 : 52 }}
-            className="wt-icon-box"
-          >
-            <motion.div animate={{ scale: open ? 0.7 : 1 }}>
-              <Monitor size={22} color="#4ade80" />
-            </motion.div>
-          </motion.div>
+          <div className="wt-icon-box">
+            <Monitor size={22} color="#4ade80" />
+          </div>
           <div className="wt-header-text">
-            <motion.p layout className="wt-title">Your Work</motion.p>
-            <AnimatePresence mode="popLayout" initial={false}>
-              {!open && (
-                <motion.p
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="wt-subtitle"
-                >
-                  {ongoing.length > 0 ? `${ongoing.length} ongoing` : 'No active files'}
-                </motion.p>
-              )}
-            </AnimatePresence>
+            <p className="wt-title">Your Work</p>
+            <p className="wt-subtitle">
+              {ongoing.length > 0 ? `${ongoing.length} ongoing` : 'No active files'}
+            </p>
           </div>
         </div>
-        <motion.div animate={{ rotate: open ? 180 : 0 }} className="wt-chevron">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="18 15 12 9 6 15" /></svg>
-        </motion.div>
-      </motion.button>
+      </div>
 
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="wt-body"
+      <div className="wt-body">
+        <div className="wt-tabs">
+          <button
+            className={`wt-tab ${tab === 'all' ? 'wt-tab-active' : ''}`}
+            onClick={() => setTab('all')}
           >
-            <div className="wt-tabs">
-              <button
-                className={`wt-tab ${tab === 'ongoing' ? 'wt-tab-active' : ''}`}
-                onClick={() => setTab('ongoing')}
-              >
-                ONGOING
-              </button>
-              <button
-                className={`wt-tab ${tab === 'closed' ? 'wt-tab-active' : ''}`}
-                onClick={() => setTab('closed')}
-              >
-                CLOSED
-              </button>
-            </div>
+            ALL
+          </button>
+          <button
+            className={`wt-tab ${tab === 'ongoing' ? 'wt-tab-active' : ''}`}
+            onClick={() => setTab('ongoing')}
+          >
+            ONGOING
+          </button>
+          <button
+            className={`wt-tab ${tab === 'closed' ? 'wt-tab-active' : ''}`}
+            onClick={() => setTab('closed')}
+          >
+            CLOSED
+          </button>
+        </div>
 
-            <div className="wt-list">
-              {loading ? (
-                <div className="wt-empty">Loading...</div>
-              ) : current.length === 0 ? (
-                <div className="wt-empty">
-                  {tab === 'ongoing' ? 'No ongoing work' : 'No completed files'}
-                </div>
-              ) : (
-                current.map((a, i) => (
-                  <motion.button
-                    key={a.assignmentId || i}
-                    className={`wt-item ${tab === 'ongoing' ? 'wt-item-clickable' : ''}`}
-                    onClick={() => tab === 'ongoing' && handleResume(a)}
-                    whileHover={tab === 'ongoing' ? { backgroundColor: 'rgba(255,255,255,0.04)' } : {}}
-                    disabled={resuming === a.assignmentId}
-                  >
-                    <span className="wt-dot" style={{ background: tab === 'ongoing' ? '#4ade80' : '#71717a' }} />
-                    <span className="wt-item-name">{a.filename || a.fileId?.substring(0, 8) || 'Unknown'}</span>
-                    {tab === 'ongoing' && (
-                      <span className="wt-item-progress">
-                        {resuming === a.assignmentId ? 'Loading...' :
-                          a.totalRows > 0 ? `${a.taggedCount}/${a.totalRows}` : 'New'}
-                      </span>
-                    )}
-                    {tab === 'closed' && (
-                      <span className="wt-item-status" style={{ color: '#4ade80' }}>Done</span>
-                    )}
-                  </motion.button>
-                ))
-              )}
+        <div className="wt-list">
+          {loading ? (
+            <div className="wt-empty">Loading...</div>
+          ) : current.length === 0 ? (
+            <div className="wt-empty">
+              {tab === 'all' ? 'No work yet' : tab === 'ongoing' ? 'No ongoing work' : 'No completed files'}
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.div>
+          ) : (
+            current.map((a, i) => {
+              const ongoing = isOngoing(a)
+              return (
+                <motion.button
+                  key={a.assignmentId || i}
+                  className={`wt-item ${ongoing ? 'wt-item-clickable' : ''}`}
+                  onClick={() => ongoing && handleResume(a)}
+                  whileHover={ongoing ? { backgroundColor: 'rgba(255,255,255,0.04)' } : {}}
+                  disabled={resuming === a.assignmentId}
+                >
+                  <span className="wt-dot" style={{ background: ongoing ? '#4ade80' : '#71717a' }} />
+                  <span className="wt-item-name">{a.filename || a.fileId?.substring(0, 8) || 'Unknown'}</span>
+                  {ongoing ? (
+                    <span className="wt-item-progress">
+                      {resuming === a.assignmentId ? 'Loading...' :
+                        a.totalRows > 0 ? `${a.taggedCount}/${a.totalRows}` : 'New'}
+                    </span>
+                  ) : (
+                    <span className="wt-item-status" style={{ color: '#4ade80' }}>Done</span>
+                  )}
+                </motion.button>
+              )
+            })
+          )}
+        </div>
+      </div>
+    </div>
   )
 }
