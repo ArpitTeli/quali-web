@@ -247,7 +247,26 @@ export default function FileBrowser({ onClaim, onResume, onBack, userId }) {
       {error && <p className="fb-error">{error}</p>}
 
       {loading ? (
-        <p className="fb-loading">Loading files...</p>
+        <div className="fb-loading">
+          <div className="wheel-and-hamster">
+            <div className="wheel"><div className="spoke"></div></div>
+            <div className="hamster">
+              <div className="hamster__head">
+                <div className="hamster__ear"></div>
+                <div className="hamster__eye"></div>
+                <div className="hamster__nose"></div>
+              </div>
+              <div className="hamster__body">
+                <div className="hamster__limb--fr"></div>
+                <div className="hamster__limb--fl"></div>
+                <div className="hamster__limb--br"></div>
+                <div className="hamster__limb--bl"></div>
+                <div className="hamster__tail"></div>
+              </div>
+            </div>
+          </div>
+          <p style={{ color: '#666', fontSize: '13px' }}>Loading files...</p>
+        </div>
       ) : (
         <div className="fb-tree">
           {tree.length === 0 ? (
