@@ -339,7 +339,7 @@ function App() {
         if (row.name) names.add(row.name.toLowerCase().trim())
         const phone = normalizePhone(row.company_phone)
         if (phone) phones.add(phone)
-        return { names, phones }
+        return { names, phones, taggedLeads: prev.taggedLeads }
       })
     }
 
