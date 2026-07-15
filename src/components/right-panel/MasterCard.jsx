@@ -18,8 +18,9 @@ export default function MasterCard({
   stats,
   actions,
   miniGraph,
+  alwaysOpen,
 }) {
-  const [isExpanded, setIsExpanded] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(!!alwaysOpen)
   const springConfig = { type: 'spring', stiffness: 300, damping: 30 }
 
   return (
@@ -28,7 +29,7 @@ export default function MasterCard({
       transition={springConfig}
       className="mc-card"
     >
-      <div className="mc-header" onClick={() => setIsExpanded(!isExpanded)}>
+      <div className="mc-header" onClick={alwaysOpen ? undefined : () => setIsExpanded(!isExpanded)}>
         <div className="mc-header-left">
           <div className="mc-icon">{icon}</div>
           <span className="mc-title">{title}</span>
@@ -46,12 +47,14 @@ export default function MasterCard({
               </svg>
             </div>
           )}
-          <motion.div
-            animate={{ rotate: isExpanded ? 0 : 180 }}
-            className="mc-chevron"
-          >
-            <ChevronUp size={20} />
-          </motion.div>
+          {!alwaysOpen && (
+            <motion.div
+              animate={{ rotate: isExpanded ? 0 : 180 }}
+              className="mc-chevron"
+            >
+              <ChevronUp size={20} />
+            </motion.div>
+          )}
         </div>
       </div>
 

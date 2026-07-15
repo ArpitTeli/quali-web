@@ -790,6 +790,7 @@ function App() {
                 icon={<FileText size={20} />}
                 title="My Master Sheet"
                 miniGraph="M2 18C15 15 25 5 45 8C65 11 70 2 78 2"
+                alwaysOpen
                 stats={[
                   { icon: <FileText size={14} />, label: 'Sheet', value: <span className="mc-stat-text">{auth.masterSheetId ? 'Connected' : 'Not configured'}</span> },
                   { icon: <BarChart3 size={14} />, label: 'Total Leads', value: <span className="mc-stat-bold">{masterStats.totalLeads}</span> },
@@ -805,24 +806,9 @@ function App() {
                 }
               />
               <MasterCard
-                icon={<Globe size={20} />}
-                title="Shared Master Sheet"
-                miniGraph="M2 12C18 8 35 18 55 10C70 5 75 14 78 8"
-                stats={[
-                  { icon: <Globe size={14} />, label: 'URL', value: <span className="mc-stat-text">Google Drive — all users</span> },
-                  { icon: <Upload size={14} />, label: 'Total Pushed', value: <span className="mc-stat-bold">—</span> },
-                  { icon: <Clock size={14} />, label: 'Last Push', value: <span className="mc-stat-text">—</span> },
-                  { icon: <Users size={14} />, label: 'Top Pusher', value: <span className="mc-stat-text">—</span> },
-                ]}
-                actions={
-                  <div className="mc-btn-row">
-                    <a className="mc-btn mc-btn-secondary" href="https://docs.google.com/spreadsheets/d/1LWsb7dfw5vQ3DZcLgmN523ALoys9hqYfmft6v-bA9kU/edit?usp=sharing" target="_blank" rel="noopener noreferrer">Open</a>
-                  </div>
-                }
-              />
-              <MasterCard
                 icon={<Folder size={20} />}
                 title="Lead Queue"
+                alwaysOpen
                 stats={[
                   { icon: <FileText size={14} />, label: 'Files', value: <span className="mc-stat-bold">{ldsStats.totalFiles}</span> },
                   { icon: <Clock size={14} />, label: 'Active', value: <span className="mc-stat-bold">{ldsStats.activeCount}</span> },
@@ -835,14 +821,14 @@ function App() {
                 }
               />
             </div>
-            <div className="landing-upload">
-              <FilePicker onFileLoad={handleFileLoad} />
-            </div>
           </div>
           <div className="landing-center">
             <CompetitionWidget
               data={Object.entries(pushCounts).map(([name, leads]) => ({ name, leads }))}
             />
+            <div className="landing-upload">
+              <FilePicker onFileLoad={handleFileLoad} />
+            </div>
           </div>
           <div className="landing-right">
             <WorkTracker
