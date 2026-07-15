@@ -429,7 +429,8 @@ function App() {
       }
       const sheets = {}
       wb.SheetNames.forEach(name => {
-        sheets[name] = { data: XLSX.utils.sheet_to_json(wb.Sheets[name]) }
+        const data = XLSX.utils.sheet_to_json(wb.Sheets[name])
+        sheets[name] = { data, headers: data.length > 0 ? Object.keys(data[0]) : [] }
       })
       const sheetName = wb.SheetNames[0]
       const firstRow = sheets[sheetName].data[0]
@@ -437,7 +438,7 @@ function App() {
         addToast('Excel sheet is empty', 'error')
         return
       }
-      const detected = detectColumns(Object.keys(firstRow))
+      const detected = detectColumns(sheets[sheetName].headers)
 
       setExcelData({ sheets, sheetNames: wb.SheetNames })
       excelDataRef.current = { sheets, sheetNames: wb.SheetNames }
