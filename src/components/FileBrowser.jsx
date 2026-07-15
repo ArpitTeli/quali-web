@@ -226,7 +226,12 @@ export default function FileBrowser({ onClaim, onResume, onBack, userId }) {
   }
 
   function handleResume(assignment) {
-    onResume(assignment)
+    try {
+      onResume(assignment)
+    } catch (e) {
+      console.error('[FileBrowser] onResume error:', e)
+      setError('Failed to load file: ' + e.message)
+    }
   }
 
   return (

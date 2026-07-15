@@ -454,9 +454,18 @@ function App() {
 
   const handleLdsResume = useCallback(async (assignment) => {
     try {
+      if (!assignment || !assignment.assignmentId) {
+        addToast('Invalid assignment data', 'error')
+        return
+      }
       const result = await api.loadProgress(assignment.assignmentId)
       if (result.error) {
         addToast('Failed to load progress: ' + result.error, 'error')
+        return
+      }
+
+      if (!result.fileData) {
+        addToast('No file data found for this assignment', 'error')
         return
       }
 
@@ -464,12 +473,21 @@ function App() {
       const bytes = new Uint8Array(binary.length)
       for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
       const wb = XLSX.read(bytes, { type: 'array' })
+      if (!wb.SheetNames || wb.SheetNames.length === 0) {
+        addToast('Excel file has no sheets', 'error')
+        return
+      }
       const sheets = {}
       wb.SheetNames.forEach(name => {
         sheets[name] = { data: XLSX.utils.sheet_to_json(wb.Sheets[name]) }
       })
       const sheetName = wb.SheetNames[0]
-      const detected = detectColumns(Object.keys(sheets[sheetName].data[0] || {}))
+      const firstRow = sheets[sheetName].data[0]
+      if (!firstRow) {
+        addToast('Excel sheet is empty', 'error')
+        return
+      }
+      const detected = detectColumns(Object.keys(firstRow))
 
       excelDataRef.current = { sheets, sheetNames: wb.SheetNames }
       setExcelData({ sheets, sheetNames: wb.SheetNames })
