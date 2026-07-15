@@ -3039,6 +3039,7 @@ body {
   justify-content: center;
   padding: 60px 0;
   gap: 16px;
+  overflow: visible;
 }
 
 .wheel-and-hamster {
@@ -3046,7 +3047,7 @@ body {
   position: relative;
   width: 12em;
   height: 12em;
-  font-size: 10px;
+  font-size: 14px;
   overflow: visible;
 }
 
