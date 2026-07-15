@@ -57,6 +57,7 @@ function App() {
   const [selectedLead, setSelectedLead] = useState(null)
   const [activeAssignment, setActiveAssignment] = useState(null)
   const [ldsStats, setLdsStats] = useState({ totalFiles: 0, activeCount: 0, completedCount: 0 })
+  const [fileBrowserRefresh, setFileBrowserRefresh] = useState(0)
   const progressTimerRef = useRef(null)
 
   useEffect(() => {
@@ -448,6 +449,7 @@ function App() {
       setRowCount(sheets[sheetName].data.length)
       setActiveAssignment(assignment)
       setIsAdditional(false)
+      setFileBrowserRefresh(prev => prev + 1)
       setView('setup')
     } catch (e) {
       console.error('[LDS Claim]', e)
@@ -1130,6 +1132,7 @@ function App() {
         </header>
         <main className="app-main">
           <FileBrowser
+            key={fileBrowserRefresh}
             userId={auth.uid}
             onClaim={handleLdsClaim}
             onBack={() => setView('landing')}
