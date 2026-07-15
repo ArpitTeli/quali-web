@@ -1,9 +1,9 @@
-const AUTH_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxDTPJExdQGRYcYsk32bll-1u-9Y8ofcD-ZkM3ITsTE-3jKnKpXBgRMVJ6nHnp3NsBGKg/exec'
-const CLOUD_MASTER_URL = 'https://script.google.com/macros/s/AKfycbzzdnjM8crblZhT7Fpw_yoRpS465ZGV9pRGJEkiFad0FB4lEfh_u3FY9Oi4ze683TgB6A/exec'
-const PUSH_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbykxuCQoi6WnnTXKdid4Ql6mwET2C68sMKZCvh7frIcGz5Wxe5lW8YR6c7Yo2s1qhPx/exec'
+const AUTH_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwA-a6d9a2tu9vDoKX3Yc2XN6sX5eLAzI_fo0xrpC8mRnkYlvFPSHSxoTWKAeZcpFxbww/exec'
+const CLOUD_MASTER_URL = 'https://script.google.com/macros/s/AKfycbxzMPAp73lSht16-PnmKh1Z4jD2t4a7Ma3fauAKbkmN4w6g_pqPvVD6xruK5ZeQTEBs3g/exec'
+const PUSH_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwnHEf1fq1MikibZfN8dpZuXCWmZX4kxBg2VMDulm4809X7BGWRrhlGdCaD3VwXTYQD/exec'
 
 // Per-user master sheet Apps Script
-const MASTER_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw4mIswXp7eGcze1rb8QWWY8Wi7Q2tw1gwc_Q-f5YAtwVoIoByrLHaY39QvsWxpPNU9/exec'
+const MASTER_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyRKL4dz_F3nfWWW6APiDDKiVsiJ3uorX2MZr2g0t2oWZX8qhTx5-oknx0qDIs_PjrQ/exec'
 
 // LDS (Lead Distribution System) Apps Script
 const LDS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxcjFWSJEJW9WIT48NUSFm7j_SRXDyaZTS_QXgll-DlisP--5vsoeS0MjzjCF90D1TH/exec'
