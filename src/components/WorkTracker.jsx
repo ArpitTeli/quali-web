@@ -14,6 +14,7 @@ export default function WorkTracker({ onResume, userId }) {
     if (!userId) return
     setLoading(true)
     api.getFileTree(userId).then(result => {
+      console.log('[WorkTracker] assignments:', result.assignments)
       if (result.assignments && Array.isArray(result.assignments)) {
         setAssignments(result.assignments)
       }

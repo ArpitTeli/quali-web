@@ -360,6 +360,23 @@ function handleClaimFile(body) {
     fileData
   ])
 
+  // Trash file from Google Drive
+  try {
+    file.setTrashed(true)
+  } catch (e) { /* ignore */ }
+
+  // Remove file from LDS_Files sheet
+  try {
+    var filesSheet = getFilesSheet()
+    var filesData = filesSheet.getDataRange().getValues()
+    for (var j = filesData.length - 1; j >= 1; j--) {
+      if (String(filesData[j][0] || '').trim() === fileId) {
+        filesSheet.deleteRow(j + 1)
+        break
+      }
+    }
+  } catch (e) { /* ignore */ }
+
   return json({
     assignment: {
       assignmentId: assignmentId,
