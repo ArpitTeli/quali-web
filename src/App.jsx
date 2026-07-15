@@ -415,16 +415,29 @@ function App() {
 
   const handleLdsClaim = useCallback(async (assignment, fileData, file) => {
     try {
+      if (!fileData) {
+        addToast('No file data returned from server', 'error')
+        return
+      }
       const binary = atob(fileData)
       const bytes = new Uint8Array(binary.length)
       for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
       const wb = XLSX.read(bytes, { type: 'array' })
+      if (!wb.SheetNames || wb.SheetNames.length === 0) {
+        addToast('Excel file has no sheets', 'error')
+        return
+      }
       const sheets = {}
       wb.SheetNames.forEach(name => {
         sheets[name] = { data: XLSX.utils.sheet_to_json(wb.Sheets[name]) }
       })
       const sheetName = wb.SheetNames[0]
-      const detected = detectColumns(Object.keys(sheets[sheetName].data[0] || {}))
+      const firstRow = sheets[sheetName].data[0]
+      if (!firstRow) {
+        addToast('Excel sheet is empty', 'error')
+        return
+      }
+      const detected = detectColumns(Object.keys(firstRow))
 
       setExcelData({ sheets, sheetNames: wb.SheetNames })
       excelDataRef.current = { sheets, sheetNames: wb.SheetNames }
@@ -434,6 +447,7 @@ function App() {
       setIsAdditional(false)
       setView('setup')
     } catch (e) {
+      console.error('[LDS Claim]', e)
       addToast('Failed to parse file: ' + e.message, 'error')
     }
   }, [addToast])

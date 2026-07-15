@@ -15,6 +15,10 @@ async function post(url, body) {
     body: JSON.stringify(body)
   })
   const text = await res.text()
+  if (text.startsWith('<!') || text.startsWith('<html')) {
+    console.error('[API] Got HTML instead of JSON — deployment may be misconfigured')
+    return { error: 'Server returned an error page. Check Apps Script deployment settings.' }
+  }
   try {
     const parsed = JSON.parse(text)
     return parsed
