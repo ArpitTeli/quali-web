@@ -13,7 +13,7 @@ export default function WorkTracker({ onResume, userId }) {
     if (!userId) return
     setLoading(true)
     api.getFileTree(userId).then(result => {
-      if (result.assignments) {
+      if (result.assignments && Array.isArray(result.assignments)) {
         setAssignments(result.assignments)
       }
       setLoading(false)
@@ -24,8 +24,9 @@ export default function WorkTracker({ onResume, userId }) {
     if (open) loadAssignments()
   }, [open, userId])
 
-  const ongoing = assignments.filter(a => a.status === 'Active' && !a.completedAt)
-  const closed = assignments.filter(a => a.status === 'Completed' || a.completedAt)
+  const safeAssignments = Array.isArray(assignments) ? assignments : []
+  const ongoing = safeAssignments.filter(a => a.status === 'Active' && !a.completedAt)
+  const closed = safeAssignments.filter(a => a.status === 'Completed' || a.completedAt)
   const current = tab === 'ongoing' ? ongoing : closed
 
   return (
