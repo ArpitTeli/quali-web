@@ -3078,7 +3078,7 @@ body {
   left: calc(50% - 3.5em);
   width: 7em;
   height: 3.75em;
-  transform: rotate(4deg) translate(-0.8em,2.05em);
+  transform: rotate(4deg) translate(-0.8em,2.35em);
   transform-origin: 50% 0;
   z-index: 1;
 }
@@ -3205,8 +3205,8 @@ body {
 }
 
 @keyframes hamster {
-  from, to { transform: rotate(4deg) translate(-0.8em,2.05em); }
-  50% { transform: rotate(0) translate(-0.8em,2.05em); }
+  from, to { transform: rotate(4deg) translate(-0.8em,2.35em); }
+  50% { transform: rotate(0) translate(-0.8em,2.35em); }
 }
 
 @keyframes hamsterHead {
