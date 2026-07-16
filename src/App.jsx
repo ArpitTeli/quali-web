@@ -417,68 +417,6 @@ function App() {
     setActiveAssignment(null)
   }, [activeAssignment, allRows, saveProgressToServer])
 
-  const renderCard = useCallback((cardId) => {
-    switch (cardId) {
-      case 'master-sheet':
-        return (
-          <MasterCard
-            icon={<FileText size={20} />}
-            title="My Master Sheet"
-            miniGraph="M2 18C15 15 25 5 45 8C65 11 70 2 78 2"
-            alwaysOpen
-            stats={[
-              { icon: <FileText size={14} />, label: 'Sheet', value: <span className="mc-stat-text">{auth.masterSheetId ? 'Connected' : 'Not configured'}</span> },
-              { icon: <BarChart3 size={14} />, label: 'Total Leads', value: <span className="mc-stat-bold">{masterStats.totalLeads}</span> },
-              { icon: <CheckCircle size={14} />, label: 'Good', value: <span className="mc-stat-green">{masterStats.good}</span> },
-              { icon: <AlertCircle size={14} />, label: 'Maybe', value: <span className="mc-stat-yellow">{masterStats.maybe}</span> },
-              { icon: <XCircle size={14} />, label: 'Bad', value: <span className="mc-stat-red">{masterStats.bad}</span> },
-            ]}
-            actions={
-              <div className="mc-btn-row">
-                <button className="mc-btn mc-btn-primary" onClick={handleOpenMasterViewer}>View</button>
-                <button className="mc-btn mc-btn-secondary" onClick={() => setShowAddLead(true)}>Add Lead</button>
-              </div>
-            }
-          />
-        )
-      case 'lead-queue':
-        return (
-          <MasterCard
-            icon={<Folder size={20} />}
-            title="Lead Queue"
-            alwaysOpen
-            stats={[
-              { icon: <FileText size={14} />, label: 'Files', value: <span className="mc-stat-bold">{ldsStats.totalFiles}</span> },
-              { icon: <Clock size={14} />, label: 'Active', value: <span className="mc-stat-bold">{ldsStats.activeCount}</span> },
-              { icon: <CheckCircle size={14} />, label: 'Completed', value: <span className="mc-stat-bold">{ldsStats.completedCount}</span> },
-            ]}
-            actions={
-              <div className="mc-btn-row">
-                <button className="mc-btn mc-btn-primary" onClick={() => setView('filebrowser')}>Browse Files</button>
-              </div>
-            }
-          />
-        )
-      case 'leaderboard':
-        return (
-          <CompetitionWidget
-            data={Object.entries(pushCounts).map(([name, leads]) => ({ name, leads }))}
-          />
-        )
-      case 'work-tracker':
-        return (
-          <WorkTracker
-            onResume={handleLdsResume}
-            userId={auth.uid}
-          />
-        )
-      case 'todo-list':
-        return <TodoList />
-      default:
-        return null
-    }
-  }, [auth, masterStats, ldsStats, pushCounts, handleOpenMasterViewer, handleLdsResume])
-
   const handleLdsClaim = useCallback(async (assignment, fileData, file) => {
     try {
       if (!fileData) {
@@ -686,6 +624,68 @@ function App() {
     }
     setMasterLoading(false)
   }, [auth, addToast])
+
+  const renderCard = useCallback((cardId) => {
+    switch (cardId) {
+      case 'master-sheet':
+        return (
+          <MasterCard
+            icon={<FileText size={20} />}
+            title="My Master Sheet"
+            miniGraph="M2 18C15 15 25 5 45 8C65 11 70 2 78 2"
+            alwaysOpen
+            stats={[
+              { icon: <FileText size={14} />, label: 'Sheet', value: <span className="mc-stat-text">{auth.masterSheetId ? 'Connected' : 'Not configured'}</span> },
+              { icon: <BarChart3 size={14} />, label: 'Total Leads', value: <span className="mc-stat-bold">{masterStats.totalLeads}</span> },
+              { icon: <CheckCircle size={14} />, label: 'Good', value: <span className="mc-stat-green">{masterStats.good}</span> },
+              { icon: <AlertCircle size={14} />, label: 'Maybe', value: <span className="mc-stat-yellow">{masterStats.maybe}</span> },
+              { icon: <XCircle size={14} />, label: 'Bad', value: <span className="mc-stat-red">{masterStats.bad}</span> },
+            ]}
+            actions={
+              <div className="mc-btn-row">
+                <button className="mc-btn mc-btn-primary" onClick={handleOpenMasterViewer}>View</button>
+                <button className="mc-btn mc-btn-secondary" onClick={() => setShowAddLead(true)}>Add Lead</button>
+              </div>
+            }
+          />
+        )
+      case 'lead-queue':
+        return (
+          <MasterCard
+            icon={<Folder size={20} />}
+            title="Lead Queue"
+            alwaysOpen
+            stats={[
+              { icon: <FileText size={14} />, label: 'Files', value: <span className="mc-stat-bold">{ldsStats.totalFiles}</span> },
+              { icon: <Clock size={14} />, label: 'Active', value: <span className="mc-stat-bold">{ldsStats.activeCount}</span> },
+              { icon: <CheckCircle size={14} />, label: 'Completed', value: <span className="mc-stat-bold">{ldsStats.completedCount}</span> },
+            ]}
+            actions={
+              <div className="mc-btn-row">
+                <button className="mc-btn mc-btn-primary" onClick={() => setView('filebrowser')}>Browse Files</button>
+              </div>
+            }
+          />
+        )
+      case 'leaderboard':
+        return (
+          <CompetitionWidget
+            data={Object.entries(pushCounts).map(([name, leads]) => ({ name, leads }))}
+          />
+        )
+      case 'work-tracker':
+        return (
+          <WorkTracker
+            onResume={handleLdsResume}
+            userId={auth.uid}
+          />
+        )
+      case 'todo-list':
+        return <TodoList />
+      default:
+        return null
+    }
+  }, [auth, masterStats, ldsStats, pushCounts, handleOpenMasterViewer, handleLdsResume])
 
   const handleDiscard = useCallback(async (row) => {
     if (!auth.masterSheetId) {
