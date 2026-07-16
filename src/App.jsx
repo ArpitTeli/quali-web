@@ -828,9 +828,6 @@ function App() {
             <CompetitionWidget
               data={Object.entries(pushCounts).map(([name, leads]) => ({ name, leads }))}
             />
-            <div className="landing-upload">
-              <FilePicker onFileLoad={handleFileLoad} />
-            </div>
           </div>
           <div className="landing-right">
             <WorkTracker
