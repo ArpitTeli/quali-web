@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from 'react'
+import { useState, useRef, useCallback } from 'react'
 
 const STORAGE_KEY = 'quali_dashboard_layout'
 
@@ -33,102 +33,99 @@ function loadLayout() {
   }
 }
 
-const COL_IDS = ['left', 'center', 'right']
-
 export default function DraggableDashboard({ renderCard }) {
   const [layout, setLayout] = useState(loadLayout)
   const [dragOverCol, setDragOverCol] = useState(null)
-  const dragState = useRef(null)
-  const [dragGhost, setDragGhost] = useState(null)
-  const layoutRef = useRef(layout)
-  layoutRef.current = layout
+  const [draggingCard, setDraggingCard] = useState(null)
+  const dragItem = useRef(null)
 
-  const handleMouseDown = useCallback((e, cardId, colId) => {
-    if (e.button !== 0) return
-    const el = e.currentTarget.closest('.dd-card')
-    if (!el) return
-    const rect = el.getBoundingClientRect()
-    dragState.current = {
-      cardId,
-      fromCol: colId,
-      startX: e.clientX,
-      startY: e.clientY,
-      offsetX: e.clientX - rect.left,
-      offsetY: e.clientY - rect.top,
-      width: rect.width,
-      height: rect.height,
-      moved: false,
-    }
+  const handleDragStart = useCallback((e, cardId, fromCol) => {
+    dragItem.current = { cardId, fromCol }
+    setDraggingCard(cardId)
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', cardId)
+
+    const dragEl = e.currentTarget
+    const rect = dragEl.getBoundingClientRect()
+
+    const ghost = document.createElement('div')
+    ghost.style.cssText = `
+      position: fixed; top: -9999px; left: -9999px;
+      width: ${rect.width}px; padding: 0;
+      background: rgba(0,0,0,0.55);
+      backdrop-filter: blur(20px) saturate(1.8);
+      -webkit-backdrop-filter: blur(20px) saturate(1.8);
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 12px;
+      box-shadow: inset 0 1px 0 0 rgba(255,255,255,0.2), 0 20px 60px rgba(0,0,0,0.6);
+      pointer-events: none;
+      z-index: 9999;
+    `
+    ghost.appendChild(dragEl.cloneNode(true))
+    document.body.appendChild(ghost)
+    e.dataTransfer.setDragImage(ghost, rect.width / 2, 30)
+    setTimeout(() => document.body.removeChild(ghost), 0)
   }, [])
 
-  useEffect(() => {
-    const handleMouseMove = (e) => {
-      const ds = dragState.current
-      if (!ds) return
-      const dx = e.clientX - ds.startX
-      const dy = e.clientY - ds.startY
-      if (!ds.moved && Math.abs(dx) + Math.abs(dy) < 4) return
-      ds.moved = true
-      setDragGhost({
-        cardId: ds.cardId,
-        x: e.clientX - ds.offsetX,
-        y: e.clientY - ds.offsetY,
-        width: ds.width,
-        height: ds.height,
-      })
-      const el = document.elementFromPoint(e.clientX, e.clientY)
-      if (!el) return
-      const colEl = el.closest('.dd-column')
-      if (colEl) {
-        const colId = COL_IDS.find(c => colEl.classList.contains(`dd-column-${c}`))
-        setDragOverCol(prev => prev === colId ? prev : colId)
-      } else {
-        setDragOverCol(null)
-      }
-    }
+  const handleDragEnd = useCallback((e) => {
+    setDraggingCard(null)
+    dragItem.current = null
+    setDragOverCol(null)
+  }, [])
 
-    const handleMouseUp = (e) => {
-      const ds = dragState.current
-      dragState.current = null
-      setDragGhost(null)
-      if (!ds || !ds.moved) { setDragOverCol(null); return }
-      const el = document.elementFromPoint(e.clientX, e.clientY)
-      const colEl = el?.closest('.dd-column')
-      const toCol = colEl ? COL_IDS.find(c => colEl.classList.contains(`dd-column-${c}`)) : null
-      setDragOverCol(null)
-      if (!toCol || toCol === ds.fromCol) return
-      setLayout(prev => {
-        const next = { left: [...prev.left], center: [...prev.center], right: [...prev.right] }
-        const fromIdx = next[ds.fromCol].indexOf(ds.cardId)
-        if (fromIdx === -1) return prev
-        next[ds.fromCol].splice(fromIdx, 1)
-        next[toCol].push(ds.cardId)
-        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)) } catch {}
-        return next
-      })
-    }
+  const handleDragOver = useCallback((e) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+  }, [])
 
-    window.addEventListener('mousemove', handleMouseMove)
-    window.addEventListener('mouseup', handleMouseUp)
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove)
-      window.removeEventListener('mouseup', handleMouseUp)
-    }
+  const handleDragEnter = useCallback((e, colId) => {
+    e.preventDefault()
+    setDragOverCol(colId)
+  }, [])
+
+  const handleDragLeave = useCallback((e, colId) => {
+    if (e.currentTarget && e.currentTarget.contains(e.relatedTarget)) return
+    setDragOverCol(prev => prev === colId ? null : prev)
+  }, [])
+
+  const handleDrop = useCallback((e, toCol) => {
+    e.preventDefault()
+    setDragOverCol(null)
+    if (!dragItem.current) return
+
+    const { cardId, fromCol } = dragItem.current
+    dragItem.current = null
+
+    setLayout(prev => {
+      const next = { left: [...prev.left], center: [...prev.center], right: [...prev.right] }
+      const fromIdx = next[fromCol].indexOf(cardId)
+      if (fromIdx === -1) return prev
+      next[fromCol].splice(fromIdx, 1)
+      next[toCol].push(cardId)
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)) } catch {}
+      return next
+    })
   }, [])
 
   return (
     <div className="dd-layout">
-      {COL_IDS.map(colId => (
+      {['left', 'center', 'right'].map(colId => (
         <div
           key={colId}
-          className={`dd-column dd-column-${colId} ${dragOverCol === colId ? 'dd-column-active' : ''}`}
+          className={`dd-column ${dragOverCol === colId ? 'dd-column-active' : ''}`}
+          onDragOver={handleDragOver}
+          onDragEnter={(e) => handleDragEnter(e, colId)}
+          onDragLeave={(e) => handleDragLeave(e, colId)}
+          onDrop={(e) => handleDrop(e, colId)}
         >
           <div className="dd-column-inner">
             {layout[colId].map(cardId => (
               <div
                 key={cardId}
-                className={`dd-card ${dragGhost?.cardId === cardId ? 'dd-card-ghost-source' : ''}`}
-                onMouseDown={(e) => handleMouseDown(e, cardId, colId)}
+                className={`dd-card ${draggingCard === cardId ? 'dd-card-dragging' : ''}`}
+                draggable="true"
+                onDragStart={(e) => handleDragStart(e, cardId, colId)}
+                onDragEnd={handleDragEnd}
               >
                 {renderCard(cardId)}
               </div>
@@ -136,20 +133,6 @@ export default function DraggableDashboard({ renderCard }) {
           </div>
         </div>
       ))}
-      {dragGhost && (
-        <div
-          className="dd-card-overlay"
-          style={{
-            position: 'fixed',
-            left: dragGhost.x,
-            top: dragGhost.y,
-            width: dragGhost.width,
-            zIndex: 9999,
-          }}
-        >
-          {renderCard(dragGhost.cardId)}
-        </div>
-      )}
     </div>
   )
 }

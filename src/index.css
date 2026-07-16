@@ -168,8 +168,8 @@ body {
   cursor: grabbing;
 }
 
-.dd-card-ghost-source {
-  opacity: 0.3;
+.dd-card-dragging {
+  opacity: 0;
 }
 
 .dd-card-overlay {
