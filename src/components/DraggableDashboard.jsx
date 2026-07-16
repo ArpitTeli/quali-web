@@ -42,13 +42,9 @@ export default function DraggableDashboard({ renderCard }) {
     dragItem.current = { cardId, fromCol }
     e.dataTransfer.effectAllowed = 'move'
     e.dataTransfer.setData('text/plain', cardId)
-    requestAnimationFrame(() => {
-      if (e.target) e.target.style.opacity = '0.4'
-    })
   }, [])
 
   const handleDragEnd = useCallback((e) => {
-    if (e.target) e.target.style.opacity = '1'
     dragItem.current = null
     setDragOverCol(null)
   }, [])
