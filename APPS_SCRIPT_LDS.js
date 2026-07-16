@@ -356,11 +356,15 @@ function handleClaimFile(body) {
   ])
 
   // Trash file from Google Drive
+  var trashError = null
   try {
     file.setTrashed(true)
-  } catch (e) { /* ignore */ }
+  } catch (e) {
+    trashError = e.message || String(e)
+  }
 
   // Remove file from LDS_Files sheet
+  var deleteError = null
   try {
     var filesSheet = getFilesSheet()
     var filesData = filesSheet.getDataRange().getValues()
@@ -370,9 +374,11 @@ function handleClaimFile(body) {
         break
       }
     }
-  } catch (e) { /* ignore */ }
+  } catch (e) {
+    deleteError = e.message || String(e)
+  }
 
-  return json({
+  var response = {
     assignment: {
       assignmentId: assignmentId,
       fileId: fileId,
@@ -381,7 +387,10 @@ function handleClaimFile(body) {
       status: 'Active'
     },
     fileData: fileData
-  })
+  }
+  if (trashError) response.trashError = trashError
+  if (deleteError) response.deleteError = deleteError
+  return json(response)
 }
 
 // ===== Save Progress =====

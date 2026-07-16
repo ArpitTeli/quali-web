@@ -194,6 +194,8 @@ export default function FileBrowser({ onClaim, onBack, userId }) {
       if (result.error) {
         setError(result.error)
       } else {
+        if (result.trashError) console.warn('[Claim] Drive trash failed:', result.trashError)
+        if (result.deleteError) console.warn('[Claim] Sheet delete failed:', result.deleteError)
         try {
           onClaim(result.assignment, result.fileData, file)
         } catch (e) {
