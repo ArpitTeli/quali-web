@@ -106,7 +106,7 @@ body {
 .landing-left {
   display: flex;
   flex-direction: column;
-  width: 30%;
+  width: 33%;
   overflow-y: auto;
 }
 
@@ -1080,7 +1080,7 @@ body {
 /* ── Landing right side layout ──────────────────────────────────── */
 
 .landing-center {
-  width: 20%;
+  width: 33%;
   display: flex;
   flex-direction: column;
   padding: 16px 8px;
@@ -1092,7 +1092,7 @@ body {
   flex-direction: column;
   gap: 12px;
   padding: 16px;
-  width: 50%;
+  width: 33%;
   overflow-y: auto;
 }
 
