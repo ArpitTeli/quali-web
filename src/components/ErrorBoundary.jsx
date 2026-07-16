@@ -14,7 +14,6 @@ export default class ErrorBoundary extends React.Component {
     console.error('[ErrorBoundary] Error:', error.message)
     console.error('[ErrorBoundary] Stack:', error.stack)
     console.error('[ErrorBoundary] Component Stack:', errorInfo.componentStack)
-    this.setState({ errorInfo })
   }
 
   render() {
