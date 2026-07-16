@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import {
   DndContext,
   closestCenter,
@@ -21,12 +21,6 @@ const DEFAULT_LAYOUT = {
   left: ['master-sheet', 'lead-queue'],
   center: ['leaderboard'],
   right: ['work-tracker', 'todo-list'],
-}
-
-const COLUMN_LABELS = {
-  left: '',
-  center: '',
-  right: '',
 }
 
 function loadLayout() {
@@ -56,13 +50,14 @@ function loadLayout() {
   }
 }
 
-function saveLayout(layout) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(layout))
-  } catch { /* ignore */ }
+function findColumnForId(layout, id) {
+  for (const [col, ids] of Object.entries(layout)) {
+    if (ids.includes(id)) return col
+  }
+  return null
 }
 
-function DroppableColumn({ id, children, isActive }) {
+function DroppableColumn({ children, isActive }) {
   return (
     <div className={`dd-column ${isActive ? 'dd-column-active' : ''}`}>
       {children}
@@ -70,7 +65,7 @@ function DroppableColumn({ id, children, isActive }) {
   )
 }
 
-function DraggableCard({ id, children, isOverlay }) {
+function DraggableCard({ id, children }) {
   const {
     attributes,
     listeners,
@@ -92,7 +87,7 @@ function DraggableCard({ id, children, isOverlay }) {
     <div
       ref={setNodeRef}
       style={style}
-      className={`dd-card ${isDragging ? 'dd-card-dragging' : ''} ${isOverlay ? 'dd-card-overlay' : ''}`}
+      className={`dd-card ${isDragging ? 'dd-card-dragging' : ''}`}
       {...attributes}
       {...listeners}
     >
@@ -104,17 +99,17 @@ function DraggableCard({ id, children, isOverlay }) {
 export default function DraggableDashboard({ cardMap }) {
   const [layout, setLayout] = useState(loadLayout)
   const [activeId, setActiveId] = useState(null)
+  const layoutRef = useRef(layout)
+
+  useEffect(() => { layoutRef.current = layout }, [layout])
+
+  useEffect(() => {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(layout)) } catch {}
+  }, [layout])
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   )
-
-  const findColumn = useCallback((id) => {
-    for (const [col, ids] of Object.entries(layout)) {
-      if (ids.includes(id)) return col
-    }
-    return null
-  }, [layout])
 
   const handleDragStart = useCallback((event) => {
     setActiveId(event.active.id)
@@ -124,8 +119,9 @@ export default function DraggableDashboard({ cardMap }) {
     const { active, over } = event
     if (!over) return
 
-    const activeCol = findColumn(active.id)
-    const overCol = findColumn(over.id)
+    const current = layoutRef.current
+    const activeCol = findColumnForId(current, active.id)
+    const overCol = findColumnForId(current, over.id)
 
     if (!activeCol || !overCol || activeCol === overCol) return
 
@@ -135,14 +131,15 @@ export default function DraggableDashboard({ cardMap }) {
       next[overCol] = [...prev[overCol]]
 
       const activeIndex = next[activeCol].indexOf(active.id)
+      if (activeIndex === -1) return prev
       next[activeCol].splice(activeIndex, 1)
 
       const overIndex = next[overCol].indexOf(over.id)
-      next[overCol].splice(overIndex, 0, active.id)
+      next[overCol].splice(overIndex === -1 ? next[overCol].length : overIndex, 0, active.id)
 
       return next
     })
-  }, [findColumn])
+  }, [])
 
   const handleDragEnd = useCallback((event) => {
     const { active, over } = event
@@ -150,33 +147,22 @@ export default function DraggableDashboard({ cardMap }) {
 
     if (!over) return
 
-    const activeCol = findColumn(active.id)
-    const overCol = findColumn(over.id)
+    const current = layoutRef.current
+    const activeCol = findColumnForId(current, active.id)
+    const overCol = findColumnForId(current, over.id)
 
-    if (!activeCol || !overCol) return
+    if (!activeCol || !overCol || activeCol !== overCol) return
 
-    if (activeCol === overCol) {
-      const oldIndex = layout[activeCol].indexOf(active.id)
-      const newIndex = layout[overCol].indexOf(over.id)
+    const oldIndex = current[activeCol].indexOf(active.id)
+    const newIndex = current[overCol].indexOf(over.id)
 
-      if (oldIndex !== newIndex) {
-        setLayout(prev => ({
-          ...prev,
-          [activeCol]: arrayMove(prev[activeCol], oldIndex, newIndex),
-        }))
-      }
+    if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
+      setLayout(prev => ({
+        ...prev,
+        [activeCol]: arrayMove(prev[activeCol], oldIndex, newIndex),
+      }))
     }
-  }, [findColumn, layout])
-
-  const handleDragEndPersist = useCallback((event) => {
-    handleDragEnd(event)
-    setTimeout(() => {
-      setLayout(prev => {
-        saveLayout(prev)
-        return prev
-      })
-    }, 0)
-  }, [handleDragEnd])
+  }, [])
 
   const handleDragCancel = useCallback(() => {
     setActiveId(null)
@@ -184,20 +170,22 @@ export default function DraggableDashboard({ cardMap }) {
 
   const activeCard = activeId ? cardMap[activeId] : null
 
+  const flatIds = [...layout.left, ...layout.center, ...layout.right]
+
   return (
     <DndContext
       sensors={sensors}
       collisionDetection={closestCenter}
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
-      onDragEnd={handleDragEndPersist}
+      onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
     >
       <div className="landing-main dd-layout">
         {['left', 'center', 'right'].map(colId => {
           const isActive = activeId && layout[colId].includes(activeId)
           return (
-            <DroppableColumn key={colId} id={colId} isActive={isActive}>
+            <DroppableColumn key={colId} isActive={isActive}>
               <SortableContext items={layout[colId]} strategy={verticalListSortingStrategy}>
                 <div className="dd-column-inner">
                   {layout[colId].map(cardId => (
