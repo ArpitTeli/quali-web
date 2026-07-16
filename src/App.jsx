@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import * as XLSX from 'xlsx'
 import FilePicker from './components/FilePicker'
 import SetupView from './components/SetupView'
@@ -11,7 +11,6 @@ import TodoList from './components/right-panel/TodoList'
 import MasterCard from './components/right-panel/MasterCard'
 import CompetitionWidget from './components/right-panel/CompetitionWidget'
 import AddLeadModal from './components/AddLeadModal'
-import DraggableDashboard from './components/DraggableDashboard'
 import { Monitor, Folder } from 'lucide-react'
 import { X, FileText, BarChart3, CheckCircle, AlertCircle, XCircle, Globe, Upload, Clock, Users } from 'lucide-react'
 import * as api from './services/api'
@@ -775,61 +774,6 @@ function App() {
     )
   }
 
-  const dashboardCards = useMemo(() => ({
-    'master-sheet': (
-      <MasterCard
-        icon={<FileText size={20} />}
-        title="My Master Sheet"
-        miniGraph="M2 18C15 15 25 5 45 8C65 11 70 2 78 2"
-        alwaysOpen
-        stats={[
-          { icon: <FileText size={14} />, label: 'Sheet', value: <span className="mc-stat-text">{auth.masterSheetId ? 'Connected' : 'Not configured'}</span> },
-          { icon: <BarChart3 size={14} />, label: 'Total Leads', value: <span className="mc-stat-bold">{masterStats.totalLeads}</span> },
-          { icon: <CheckCircle size={14} />, label: 'Good', value: <span className="mc-stat-green">{masterStats.good}</span> },
-          { icon: <AlertCircle size={14} />, label: 'Maybe', value: <span className="mc-stat-yellow">{masterStats.maybe}</span> },
-          { icon: <XCircle size={14} />, label: 'Bad', value: <span className="mc-stat-red">{masterStats.bad}</span> },
-        ]}
-        actions={
-          <div className="mc-btn-row">
-            <button className="mc-btn mc-btn-primary" onClick={handleOpenMasterViewer}>View</button>
-            <button className="mc-btn mc-btn-secondary" onClick={() => setShowAddLead(true)}>Add Lead</button>
-          </div>
-        }
-      />
-    ),
-    'lead-queue': (
-      <MasterCard
-        icon={<Folder size={20} />}
-        title="Lead Queue"
-        alwaysOpen
-        stats={[
-          { icon: <FileText size={14} />, label: 'Files', value: <span className="mc-stat-bold">{ldsStats.totalFiles}</span> },
-          { icon: <Clock size={14} />, label: 'Active', value: <span className="mc-stat-bold">{ldsStats.activeCount}</span> },
-          { icon: <CheckCircle size={14} />, label: 'Completed', value: <span className="mc-stat-bold">{ldsStats.completedCount}</span> },
-        ]}
-        actions={
-          <div className="mc-btn-row">
-            <button className="mc-btn mc-btn-primary" onClick={() => setView('filebrowser')}>Browse Files</button>
-          </div>
-        }
-      />
-    ),
-    'leaderboard': (
-      <CompetitionWidget
-        data={Object.entries(pushCounts).map(([name, leads]) => ({ name, leads }))}
-      />
-    ),
-    'work-tracker': (
-      <WorkTracker
-        onResume={handleLdsResume}
-        userId={auth.uid}
-      />
-    ),
-    'todo-list': (
-      <TodoList />
-    ),
-  }), [auth, masterStats, ldsStats, pushCounts, handleOpenMasterViewer, handleLdsResume, setView, setShowAddLead])
-
   if (view === 'landing') {
     return (
       <div className="app">
@@ -842,7 +786,56 @@ function App() {
           </div>
         </header>
         <main className="app-main landing-main">
-          <DraggableDashboard cardMap={dashboardCards} />
+          <div className="landing-left">
+            <MasterCard
+              icon={<FileText size={20} />}
+              title="My Master Sheet"
+              miniGraph="M2 18C15 15 25 5 45 8C65 11 70 2 78 2"
+              alwaysOpen
+              stats={[
+                { icon: <FileText size={14} />, label: 'Sheet', value: <span className="mc-stat-text">{auth.masterSheetId ? 'Connected' : 'Not configured'}</span> },
+                { icon: <BarChart3 size={14} />, label: 'Total Leads', value: <span className="mc-stat-bold">{masterStats.totalLeads}</span> },
+                { icon: <CheckCircle size={14} />, label: 'Good', value: <span className="mc-stat-green">{masterStats.good}</span> },
+                { icon: <AlertCircle size={14} />, label: 'Maybe', value: <span className="mc-stat-yellow">{masterStats.maybe}</span> },
+                { icon: <XCircle size={14} />, label: 'Bad', value: <span className="mc-stat-red">{masterStats.bad}</span> },
+              ]}
+              actions={
+                <div className="mc-btn-row">
+                  <button className="mc-btn mc-btn-primary" onClick={handleOpenMasterViewer}>View</button>
+                  <button className="mc-btn mc-btn-secondary" onClick={() => setShowAddLead(true)}>Add Lead</button>
+                </div>
+              }
+            />
+            <MasterCard
+              icon={<Folder size={20} />}
+              title="Lead Queue"
+              alwaysOpen
+              stats={[
+                { icon: <FileText size={14} />, label: 'Files', value: <span className="mc-stat-bold">{ldsStats.totalFiles}</span> },
+                { icon: <Clock size={14} />, label: 'Active', value: <span className="mc-stat-bold">{ldsStats.activeCount}</span> },
+                { icon: <CheckCircle size={14} />, label: 'Completed', value: <span className="mc-stat-bold">{ldsStats.completedCount}</span> },
+              ]}
+              actions={
+                <div className="mc-btn-row">
+                  <button className="mc-btn mc-btn-primary" onClick={() => setView('filebrowser')}>Browse Files</button>
+                </div>
+              }
+            />
+          </div>
+          <div className="landing-center">
+            <CompetitionWidget
+              data={Object.entries(pushCounts).map(([name, leads]) => ({ name, leads }))}
+            />
+          </div>
+          <div className="landing-right">
+            <WorkTracker
+              onResume={handleLdsResume}
+              userId={auth.uid}
+            />
+            <div className="landing-right-bottom">
+              <TodoList />
+            </div>
+          </div>
         </main>
         {showAddLead && <AddLeadModal onClose={() => { setShowAddLead(false); if (isAdditional) { setView('batch'); setIsAdditional(false) } }} onAdd={handleAddLead} />}
         <ToastContainer />
