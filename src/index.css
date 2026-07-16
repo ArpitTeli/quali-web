@@ -101,6 +101,26 @@ body {
 
 .landing-main {
   display: flex;
+  background-image: url('/assets/dashboard-bg.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  position: relative;
+}
+
+.landing-main::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.landing-main > * {
+  position: relative;
+  z-index: 1;
 }
 
 .landing-left {
