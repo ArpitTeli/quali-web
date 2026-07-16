@@ -2224,6 +2224,54 @@ body {
   margin-top: 4px;
 }
 
+.cw-podium {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0 12px 12px;
+}
+
+.cw-podium-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 28px;
+  opacity: 0.3;
+}
+
+.cw-podium-filled {
+  opacity: 1;
+}
+
+.cw-podium-rank {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted-foreground, #666);
+  width: 20px;
+  flex-shrink: 0;
+}
+
+.cw-podium-filled .cw-podium-rank {
+  color: var(--foreground, #e0e0e0);
+}
+
+.cw-podium-name {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted-foreground, #a1a1a1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cw-podium-val {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--foreground, #e0e0e0);
+  font-variant-numeric: tabular-nums;
+}
+
 .cw-tooltip {
   display: flex;
   flex-direction: column;
