@@ -11,6 +11,7 @@ import TodoList from './components/right-panel/TodoList'
 import MasterCard from './components/right-panel/MasterCard'
 import CompetitionWidget from './components/right-panel/CompetitionWidget'
 import AddLeadModal from './components/AddLeadModal'
+import DraggableDashboard from './components/DraggableDashboard'
 import { Monitor, Folder } from 'lucide-react'
 import { X, FileText, BarChart3, CheckCircle, AlertCircle, XCircle, Globe, Upload, Clock, Users } from 'lucide-react'
 import * as api from './services/api'
@@ -775,18 +776,10 @@ function App() {
   }
 
   if (view === 'landing') {
-    return (
-      <div className="app">
-        <header className="app-header">
-          <h1>Quali</h1>
-          <p className="app-subtitle">Lead Review Tool — Web</p>
-          <div className="header-user">
-            <span className="header-username">{auth.displayName}</span>
-            <button className="btn-logout" onClick={handleLogout}>Logout</button>
-          </div>
-        </header>
-        <main className="app-main landing-main">
-          <div className="landing-left">
+    const renderCard = useCallback((cardId) => {
+      switch (cardId) {
+        case 'master-sheet':
+          return (
             <MasterCard
               icon={<FileText size={20} />}
               title="My Master Sheet"
@@ -806,6 +799,9 @@ function App() {
                 </div>
               }
             />
+          )
+        case 'lead-queue':
+          return (
             <MasterCard
               icon={<Folder size={20} />}
               title="Lead Queue"
@@ -821,21 +817,39 @@ function App() {
                 </div>
               }
             />
-          </div>
-          <div className="landing-center">
+          )
+        case 'leaderboard':
+          return (
             <CompetitionWidget
               data={Object.entries(pushCounts).map(([name, leads]) => ({ name, leads }))}
             />
-          </div>
-          <div className="landing-right">
+          )
+        case 'work-tracker':
+          return (
             <WorkTracker
               onResume={handleLdsResume}
               userId={auth.uid}
             />
-            <div className="landing-right-bottom">
-              <TodoList />
-            </div>
+          )
+        case 'todo-list':
+          return <TodoList />
+        default:
+          return null
+      }
+    }, [auth, masterStats, ldsStats, pushCounts, handleOpenMasterViewer, handleLdsResume])
+
+    return (
+      <div className="app">
+        <header className="app-header">
+          <h1>Quali</h1>
+          <p className="app-subtitle">Lead Review Tool — Web</p>
+          <div className="header-user">
+            <span className="header-username">{auth.displayName}</span>
+            <button className="btn-logout" onClick={handleLogout}>Logout</button>
           </div>
+        </header>
+        <main className="app-main landing-main">
+          <DraggableDashboard renderCard={renderCard} />
         </main>
         {showAddLead && <AddLeadModal onClose={() => { setShowAddLead(false); if (isAdditional) { setView('batch'); setIsAdditional(false) } }} onAdd={handleAddLead} />}
         <ToastContainer />

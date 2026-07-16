@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from 'react'
+import { useState, useRef, useCallback } from 'react'
 
 const STORAGE_KEY = 'quali_dashboard_layout'
 
@@ -33,55 +33,48 @@ function loadLayout() {
   }
 }
 
-export default function DraggableDashboard({ cardMap }) {
+export default function DraggableDashboard({ renderCard }) {
   const [layout, setLayout] = useState(loadLayout)
   const [dragOverCol, setDragOverCol] = useState(null)
   const dragItem = useRef(null)
 
-  useEffect(() => {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(layout)) } catch {}
-  }, [layout])
-
-  function handleDragStart(e, cardId, fromCol) {
+  const handleDragStart = useCallback((e, cardId, fromCol) => {
     dragItem.current = { cardId, fromCol }
     e.dataTransfer.effectAllowed = 'move'
     e.dataTransfer.setData('text/plain', cardId)
     requestAnimationFrame(() => {
-      e.target.style.opacity = '0.4'
+      if (e.target) e.target.style.opacity = '0.4'
     })
-  }
+  }, [])
 
-  function handleDragEnd(e) {
-    e.target.style.opacity = '1'
+  const handleDragEnd = useCallback((e) => {
+    if (e.target) e.target.style.opacity = '1'
     dragItem.current = null
     setDragOverCol(null)
-  }
+  }, [])
 
-  function handleDragOver(e) {
+  const handleDragOver = useCallback((e) => {
     e.preventDefault()
     e.dataTransfer.dropEffect = 'move'
-  }
+  }, [])
 
-  function handleDragEnter(e, colId) {
+  const handleDragEnter = useCallback((e, colId) => {
     e.preventDefault()
     setDragOverCol(colId)
-  }
+  }, [])
 
-  function handleDragLeave(e, colId) {
-    if (e.currentTarget.contains(e.relatedTarget)) return
+  const handleDragLeave = useCallback((e, colId) => {
+    if (e.currentTarget && e.currentTarget.contains(e.relatedTarget)) return
     setDragOverCol(prev => prev === colId ? null : prev)
-  }
+  }, [])
 
-  function handleDrop(e, toCol) {
+  const handleDrop = useCallback((e, toCol) => {
     e.preventDefault()
     setDragOverCol(null)
     if (!dragItem.current) return
 
     const { cardId, fromCol } = dragItem.current
-    if (fromCol === toCol) {
-      dragItem.current = null
-      return
-    }
+    dragItem.current = null
 
     setLayout(prev => {
       const next = { left: [...prev.left], center: [...prev.center], right: [...prev.right] }
@@ -89,14 +82,13 @@ export default function DraggableDashboard({ cardMap }) {
       if (fromIdx === -1) return prev
       next[fromCol].splice(fromIdx, 1)
       next[toCol].push(cardId)
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)) } catch {}
       return next
     })
-
-    dragItem.current = null
-  }
+  }, [])
 
   return (
-    <div className="landing-main dd-layout">
+    <div className="dd-layout">
       {['left', 'center', 'right'].map(colId => (
         <div
           key={colId}
@@ -115,7 +107,7 @@ export default function DraggableDashboard({ cardMap }) {
                 onDragStart={(e) => handleDragStart(e, cardId, colId)}
                 onDragEnd={handleDragEnd}
               >
-                {cardMap[cardId]}
+                {renderCard(cardId)}
               </div>
             ))}
           </div>
