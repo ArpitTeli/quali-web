@@ -930,22 +930,24 @@ body {
 .todo-card {
   overflow: hidden;
   border-radius: 16px;
-  border: 1px solid rgba(255,255,255,0.12);
-  background: rgba(0,0,0,0.35);
-  backdrop-filter: blur(16px) saturate(1.6);
-  -webkit-backdrop-filter: blur(16px) saturate(1.6);
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(20px) saturate(1.8);
+  -webkit-backdrop-filter: blur(20px) saturate(1.8);
   box-shadow:
-    inset 0 1px 0 0 rgba(255,255,255,0.15),
-    0 8px 32px rgba(0,0,0,0.4);
+    inset 0 1px 0 0 rgba(255,255,255,0.2),
+    inset 0 -8px 16px -6px rgba(255,255,255,0.08),
+    0 8px 32px rgba(0,0,0,0.5);
   padding: 16px 18px;
   transition: border-color 0.3s, box-shadow 0.3s;
 }
 
 .todo-card:hover {
-  border-color: rgba(255,255,255,0.2);
+  border-color: rgba(255,255,255,0.28);
   box-shadow:
-    inset 0 1px 0 0 rgba(255,255,255,0.2),
-    0 12px 40px rgba(0,0,0,0.5);
+    inset 0 1px 0 0 rgba(255,255,255,0.28),
+    inset 0 -8px 16px -6px rgba(255,255,255,0.12),
+    0 12px 40px rgba(0,0,0,0.6);
 }
 
 .todo-filters {
@@ -1986,22 +1988,24 @@ body {
 .mc-card {
   width: 100%;
   border-radius: 12px;
-  border: 1px solid rgba(255,255,255,0.12);
-  background: rgba(0,0,0,0.35);
-  backdrop-filter: blur(16px) saturate(1.6);
-  -webkit-backdrop-filter: blur(16px) saturate(1.6);
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(20px) saturate(1.8);
+  -webkit-backdrop-filter: blur(20px) saturate(1.8);
   box-shadow:
-    inset 0 1px 0 0 rgba(255,255,255,0.15),
-    0 8px 32px rgba(0,0,0,0.4);
+    inset 0 1px 0 0 rgba(255,255,255,0.2),
+    inset 0 -8px 16px -6px rgba(255,255,255,0.08),
+    0 8px 32px rgba(0,0,0,0.5);
   overflow: hidden;
   transition: border-color 0.3s, box-shadow 0.3s;
 }
 
 .mc-card:hover {
-  border-color: rgba(255,255,255,0.2);
+  border-color: rgba(255,255,255,0.28);
   box-shadow:
-    inset 0 1px 0 0 rgba(255,255,255,0.2),
-    0 12px 40px rgba(0,0,0,0.5);
+    inset 0 1px 0 0 rgba(255,255,255,0.28),
+    inset 0 -8px 16px -6px rgba(255,255,255,0.12),
+    0 12px 40px rgba(0,0,0,0.6);
 }
 
 .mc-header {
@@ -2211,21 +2215,23 @@ body {
 .cw-card {
   border-radius: 30px;
   padding: 6px;
-  background: rgba(0,0,0,0.35);
-  backdrop-filter: blur(16px) saturate(1.6);
-  -webkit-backdrop-filter: blur(16px) saturate(1.6);
-  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(20px) saturate(1.8);
+  -webkit-backdrop-filter: blur(20px) saturate(1.8);
+  border: 1px solid rgba(255,255,255,0.18);
   box-shadow:
-    inset 0 1px 0 0 rgba(255,255,255,0.15),
-    0 8px 32px rgba(0,0,0,0.4);
+    inset 0 1px 0 0 rgba(255,255,255,0.2),
+    inset 0 -8px 16px -6px rgba(255,255,255,0.08),
+    0 8px 32px rgba(0,0,0,0.5);
   transition: border-color 0.3s, box-shadow 0.3s;
 }
 
 .cw-card:hover {
-  border-color: rgba(255,255,255,0.2);
+  border-color: rgba(255,255,255,0.28);
   box-shadow:
-    inset 0 1px 0 0 rgba(255,255,255,0.2),
-    0 12px 40px rgba(0,0,0,0.5);
+    inset 0 1px 0 0 rgba(255,255,255,0.28),
+    inset 0 -8px 16px -6px rgba(255,255,255,0.12),
+    0 12px 40px rgba(0,0,0,0.6);
 }
 
 .cw-title {
@@ -3416,13 +3422,14 @@ body {
 .wt-card {
   width: 100%;
   border-radius: 12px;
-  border: 1px solid rgba(255,255,255,0.12);
-  background: rgba(0,0,0,0.35);
-  backdrop-filter: blur(16px) saturate(1.6);
-  -webkit-backdrop-filter: blur(16px) saturate(1.6);
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(20px) saturate(1.8);
+  -webkit-backdrop-filter: blur(20px) saturate(1.8);
   box-shadow:
-    inset 0 1px 0 0 rgba(255,255,255,0.15),
-    0 8px 32px rgba(0,0,0,0.4);
+    inset 0 1px 0 0 rgba(255,255,255,0.2),
+    inset 0 -8px 16px -6px rgba(255,255,255,0.08),
+    0 8px 32px rgba(0,0,0,0.5);
   overflow: hidden;
   transition: border-color 0.3s, box-shadow 0.3s;
 }
@@ -3432,10 +3439,11 @@ body {
 }
 
 .wt-card:hover {
-  border-color: rgba(255,255,255,0.2);
+  border-color: rgba(255,255,255,0.28);
   box-shadow:
-    inset 0 1px 0 0 rgba(255,255,255,0.2),
-    0 12px 40px rgba(0,0,0,0.5);
+    inset 0 1px 0 0 rgba(255,255,255,0.28),
+    inset 0 -8px 16px -6px rgba(255,255,255,0.12),
+    0 12px 40px rgba(0,0,0,0.6);
 }
 
 .wt-header {
