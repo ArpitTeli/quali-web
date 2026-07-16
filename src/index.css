@@ -161,6 +161,15 @@ body {
 .dd-card {
   touch-action: none;
   user-select: none;
+  cursor: grab;
+}
+
+.dd-card:active {
+  cursor: grabbing;
+}
+
+.dd-card-ghost-source {
+  opacity: 0.3;
 }
 
 .dd-card-overlay {
@@ -175,7 +184,6 @@ body {
     0 20px 60px rgba(0,0,0,0.6);
   border-radius: 12px;
   pointer-events: none;
-  cursor: grabbing;
 }
 
 .tab-content {
