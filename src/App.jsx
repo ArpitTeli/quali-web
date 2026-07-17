@@ -879,6 +879,9 @@ function App() {
     return (
       <div className="app">
         <LoginView onLogin={handleLogin} />
+        {miniPlayerOpen && batchRows.length > 0 && (
+          <MiniPlayer rows={batchRows} onTag={handleTag} onSearch={handleMiniPlayerSearch} onClose={() => setMiniPlayerOpen(false)} onNextBatch={handleNextBatch} onHome={handleGoHome} allTagged={batchRows.every(r => r.tag)} hasUnprocessed={allRows.some(r => r.status === 'unprocessed')} />
+        )}
         <ToastContainer />
       </div>
     )
@@ -917,22 +920,13 @@ function App() {
             </button>
           </div>
         </header>
-        <main className={`app-main landing-main ${miniPlayerOpen && allRows.length > 0 ? 'with-mini-player' : ''}`} style={getBackgroundStyle()}>
+        <main className="app-main landing-main" style={getBackgroundStyle()}>
           <DraggableDashboard renderCard={renderCard} />
         </main>
-        {miniPlayerOpen && batchRows.length > 0 && (
-          <MiniPlayer
-            rows={batchRows}
-            onTag={handleTag}
-            onSearch={handleMiniPlayerSearch}
-            onClose={() => setMiniPlayerOpen(false)}
-            onNextBatch={handleNextBatch}
-            onHome={handleGoHome}
-            allTagged={batchRows.length > 0 && batchRows.every(r => r.tag)}
-            hasUnprocessed={allRows.some(r => r.status === 'unprocessed')}
-          />
-        )}
         {showAddLead && <AddLeadModal onClose={() => { setShowAddLead(false); if (isAdditional) { setView('batch'); setIsAdditional(false) } }} onAdd={handleAddLead} />}
+        {miniPlayerOpen && batchRows.length > 0 && (
+          <MiniPlayer rows={batchRows} onTag={handleTag} onSearch={handleMiniPlayerSearch} onClose={() => setMiniPlayerOpen(false)} onNextBatch={handleNextBatch} onHome={handleGoHome} allTagged={batchRows.every(r => r.tag)} hasUnprocessed={allRows.some(r => r.status === 'unprocessed')} />
+        )}
         <ToastContainer />
       </div>
     )
@@ -962,6 +956,9 @@ function App() {
             isAdditional={isAdditional}
           />
         </main>
+        {miniPlayerOpen && batchRows.length > 0 && (
+          <MiniPlayer rows={batchRows} onTag={handleTag} onSearch={handleMiniPlayerSearch} onClose={() => setMiniPlayerOpen(false)} onNextBatch={handleNextBatch} onHome={handleGoHome} allTagged={batchRows.every(r => r.tag)} hasUnprocessed={allRows.some(r => r.status === 'unprocessed')} />
+        )}
         <ToastContainer />
       </div>
     )
@@ -1093,6 +1090,9 @@ function App() {
           </div>
         )}
         {showAddLead && <AddLeadModal onClose={() => { setShowAddLead(false); handleOpenMasterViewer() }} onAdd={handleAddLead} />}
+        {miniPlayerOpen && batchRows.length > 0 && (
+          <MiniPlayer rows={batchRows} onTag={handleTag} onSearch={handleMiniPlayerSearch} onClose={() => setMiniPlayerOpen(false)} onNextBatch={handleNextBatch} onHome={handleGoHome} allTagged={batchRows.every(r => r.tag)} hasUnprocessed={allRows.some(r => r.status === 'unprocessed')} />
+        )}
         <ToastContainer />
       </div>
     )
@@ -1133,7 +1133,7 @@ function App() {
             <button className="btn-logout" onClick={handleLogout}>Logout</button>
           </div>
         </header>
-        <main className={`app-main batch-view ${miniPlayerOpen && batchRows.length > 0 ? 'with-mini-player' : ''}`}>
+        <main className="app-main batch-view">
           <div className="batch-content">
             {selectedLead ? (
               <div className="lead-detail-panel">
@@ -1240,6 +1240,9 @@ function App() {
             onBack={() => setView('landing')}
           />
         </main>
+        {miniPlayerOpen && batchRows.length > 0 && (
+          <MiniPlayer rows={batchRows} onTag={handleTag} onSearch={handleMiniPlayerSearch} onClose={() => setMiniPlayerOpen(false)} onNextBatch={handleNextBatch} onHome={handleGoHome} allTagged={batchRows.every(r => r.tag)} hasUnprocessed={allRows.some(r => r.status === 'unprocessed')} />
+        )}
         <ToastContainer />
       </div>
     )

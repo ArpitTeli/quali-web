@@ -112,10 +112,6 @@ body {
   background-image: url('/assets/dashboard-bg.jpg');
 }
 
-.landing-main.with-mini-player {
-  padding-bottom: 0;
-}
-
 .landing-main::before {
   content: '';
   position: absolute;
@@ -2898,10 +2894,6 @@ body {
   flex-direction: column;
 }
 
-.batch-view.with-mini-player {
-  padding-bottom: 400px;
-}
-
 .batch-content {
   flex: 1;
   display: flex;
@@ -3923,42 +3915,54 @@ body {
   background: rgba(248,113,113,0.1);
 }
 
-/* ── Mini Player ────────────────────────────────────────── */
+/* ── Mini Player (Floating Panel) ──────────────────────── */
 
 .mini-player {
   position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 260px;
+  bottom: 20px;
+  right: 20px;
+  width: 320px;
+  max-height: 420px;
   display: flex;
   flex-direction: column;
-  background: rgba(20,20,20,0.95);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-top: 1px solid rgba(255,255,255,0.1);
-  z-index: 50;
-  box-shadow: 0 -8px 32px rgba(0,0,0,0.4);
+  background: rgba(20,20,20,0.92);
+  backdrop-filter: blur(20px) saturate(1.6);
+  -webkit-backdrop-filter: blur(20px) saturate(1.6);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 12px;
+  z-index: 100;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.5), inset 0 1px 0 0 rgba(255,255,255,0.08);
+  overflow: hidden;
 }
 
-.mp-header {
+.mini-player.mp-collapsed {
+  max-height: none;
+}
+
+.mp-drag-handle {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 14px;
-  background: rgba(30,30,30,0.8);
+  padding: 8px 10px;
+  background: rgba(30,30,30,0.6);
   border-bottom: 1px solid rgba(255,255,255,0.06);
-  min-height: 36px;
+  cursor: grab;
+  user-select: none;
+  min-height: 34px;
 }
 
-.mp-header-left {
+.mp-drag-handle:active {
+  cursor: grabbing;
+}
+
+.mp-header-right {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
 }
 
 .mp-title {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   color: #fff;
   letter-spacing: 0.5px;
@@ -3966,16 +3970,35 @@ body {
 }
 
 .mp-stats {
-  font-size: 11px;
+  font-size: 10px;
   color: #666;
+}
+
+.mp-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: #888;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.mp-toggle:hover {
+  background: rgba(255,255,255,0.1);
+  color: #fff;
 }
 
 .mp-close {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   background: transparent;
   border: none;
   border-radius: 4px;
@@ -3986,17 +4009,19 @@ body {
 
 .mp-close:hover {
   background: rgba(255,255,255,0.1);
-  color: #fff;
+  color: #f87171;
 }
 
 .mp-list {
   flex: 1;
   overflow-y: auto;
   padding: 4px 0;
+  min-height: 0;
+  max-height: 280px;
 }
 
 .mp-list::-webkit-scrollbar {
-  width: 4px;
+  width: 3px;
 }
 
 .mp-list::-webkit-scrollbar-track {
@@ -4012,17 +4037,17 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 100%;
+  padding: 20px;
   color: #555;
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .mp-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 14px;
-  gap: 8px;
+  padding: 5px 10px;
+  gap: 6px;
   transition: background 0.15s;
   border-left: 3px solid transparent;
 }
@@ -4048,7 +4073,7 @@ body {
 
 .mp-row-name {
   flex: 1;
-  font-size: 12px;
+  font-size: 11px;
   color: #ccc;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -4063,18 +4088,20 @@ body {
 
 .mp-row-actions {
   display: flex;
-  gap: 4px;
+  gap: 3px;
   flex-shrink: 0;
 }
 
 .tag-btn {
-  padding: 3px 8px;
-  border-radius: 4px;
+  padding: 2px 6px;
+  border-radius: 3px;
   border: 1px solid transparent;
   cursor: pointer;
   transition: all 0.15s;
-  font-size: 11px;
-  font-weight: 500;
+  font-size: 10px;
+  font-weight: 600;
+  min-width: 22px;
+  text-align: center;
 }
 
 .tag-btn.green {
@@ -4117,24 +4144,23 @@ body {
 }
 
 .mp-footer {
-  padding: 8px 14px;
-  background: rgba(30,30,30,0.8);
+  padding: 6px 10px 8px;
+  background: rgba(30,30,30,0.4);
   border-top: 1px solid rgba(255,255,255,0.06);
   display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .mp-progress {
   display: flex;
   align-items: center;
-  gap: 10px;
-  flex: 1;
+  gap: 8px;
 }
 
 .mp-progress-bar {
   flex: 1;
-  height: 4px;
+  height: 3px;
   background: #333;
   border-radius: 2px;
   overflow: hidden;
@@ -4147,24 +4173,23 @@ body {
   transition: width 0.3s;
 }
 
-.mp-progress-text {
-  font-size: 10px;
-  color: #666;
-  white-space: nowrap;
+.mp-footer-btns {
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
 }
 
 .mp-btn-next {
-  padding: 5px 10px;
+  padding: 3px 8px;
   border: none;
-  border-radius: 6px;
-  font-size: 11px;
+  border-radius: 4px;
+  font-size: 10px;
   font-weight: 600;
   cursor: pointer;
   background: #4ade80;
   color: #000;
   transition: all 0.15s;
   white-space: nowrap;
-  flex-shrink: 0;
 }
 
 .mp-btn-next:hover:not(.disabled) {
@@ -4178,20 +4203,24 @@ body {
 }
 
 .mp-btn-home {
-  padding: 5px 10px;
+  padding: 3px 8px;
   border: 1px solid #444;
-  border-radius: 6px;
-  font-size: 11px;
+  border-radius: 4px;
+  font-size: 10px;
   font-weight: 500;
   cursor: pointer;
   background: #333;
   color: #aaa;
   transition: all 0.15s;
   white-space: nowrap;
-  flex-shrink: 0;
 }
 
 .mp-btn-home:hover {
   background: #444;
   color: #fff;
+}
+
+.mp-collapsed-bar {
+  padding: 6px 10px;
+  background: rgba(30,30,30,0.4);
 }
