@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 
-export default function MiniPlayer({ rows, onTag, onSearch, onClose }) {
+export default function MiniPlayer({ rows, onTag, onSearch, onClose, onNextBatch, onHome, allTagged, hasUnprocessed }) {
   const taggedCount = useMemo(() => rows.filter(r => r.tag).length, [rows])
   const total = rows.length
   const pct = total > 0 ? (taggedCount / total) * 100 : 0
@@ -60,6 +60,16 @@ export default function MiniPlayer({ rows, onTag, onSearch, onClose }) {
           </div>
           <span className="mp-progress-text">{taggedCount}/{total} tagged</span>
         </div>
+        {onNextBatch && (
+          <button
+            className={`mp-btn-next ${allTagged && hasUnprocessed ? '' : 'disabled'}`}
+            onClick={onNextBatch}
+            disabled={!allTagged || !hasUnprocessed}
+          >Next Batch</button>
+        )}
+        {onHome && (
+          <button className="mp-btn-home" onClick={onHome}>Home</button>
+        )}
       </div>
     </div>
   )

@@ -322,6 +322,7 @@ function App() {
       }
 
       setView('batch')
+      setMiniPlayerOpen(true)
 
       const act = [...storage.getActivities(), {
         type: 'file',
@@ -438,6 +439,7 @@ function App() {
       await saveProgressToServer(activeAssignment.assignmentId, allRows)
     }
     setView('landing')
+    setMiniPlayerOpen(false)
     setExcelData(null)
     excelDataRef.current = null
     setColumnMapping({})
@@ -604,6 +606,7 @@ function App() {
         }
 
         setView('batch')
+        setMiniPlayerOpen(true)
         addToast(`Resumed — ${taggedCount} leads already tagged`, 'success')
       } else {
         setView('setup')
@@ -917,12 +920,16 @@ function App() {
         <main className={`app-main landing-main ${miniPlayerOpen && allRows.length > 0 ? 'with-mini-player' : ''}`} style={getBackgroundStyle()}>
           <DraggableDashboard renderCard={renderCard} />
         </main>
-        {miniPlayerOpen && allRows.length > 0 && (
+        {miniPlayerOpen && batchRows.length > 0 && (
           <MiniPlayer
-            rows={allRows}
+            rows={batchRows}
             onTag={handleTag}
             onSearch={handleMiniPlayerSearch}
             onClose={() => setMiniPlayerOpen(false)}
+            onNextBatch={handleNextBatch}
+            onHome={handleGoHome}
+            allTagged={batchRows.length > 0 && batchRows.every(r => r.tag)}
+            hasUnprocessed={allRows.some(r => r.status === 'unprocessed')}
           />
         )}
         {showAddLead && <AddLeadModal onClose={() => { setShowAddLead(false); if (isAdditional) { setView('batch'); setIsAdditional(false) } }} onAdd={handleAddLead} />}
@@ -1126,7 +1133,7 @@ function App() {
             <button className="btn-logout" onClick={handleLogout}>Logout</button>
           </div>
         </header>
-        <main className="app-main batch-view">
+        <main className={`app-main batch-view ${miniPlayerOpen && batchRows.length > 0 ? 'with-mini-player' : ''}`}>
           <div className="batch-content">
             {selectedLead ? (
               <div className="lead-detail-panel">
@@ -1196,6 +1203,18 @@ function App() {
               </div>
             </div>
           </div>
+        )}
+        {miniPlayerOpen && batchRows.length > 0 && (
+          <MiniPlayer
+            rows={batchRows}
+            onTag={handleTag}
+            onSearch={handleMiniPlayerSearch}
+            onClose={() => setMiniPlayerOpen(false)}
+            onNextBatch={handleNextBatch}
+            onHome={handleGoHome}
+            allTagged={allTagged}
+            hasUnprocessed={hasUnprocessed}
+          />
         )}
         <ToastContainer />
       </div>

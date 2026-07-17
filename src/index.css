@@ -2898,6 +2898,10 @@ body {
   flex-direction: column;
 }
 
+.batch-view.with-mini-player {
+  padding-bottom: 400px;
+}
+
 .batch-content {
   flex: 1;
   display: flex;
@@ -4116,12 +4120,16 @@ body {
   padding: 8px 14px;
   background: rgba(30,30,30,0.8);
   border-top: 1px solid rgba(255,255,255,0.06);
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .mp-progress {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex: 1;
 }
 
 .mp-progress-bar {
@@ -4143,4 +4151,47 @@ body {
   font-size: 10px;
   color: #666;
   white-space: nowrap;
+}
+
+.mp-btn-next {
+  padding: 5px 10px;
+  border: none;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  background: #4ade80;
+  color: #000;
+  transition: all 0.15s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.mp-btn-next:hover:not(.disabled) {
+  background: #22c55e;
+}
+
+.mp-btn-next.disabled {
+  background: #333;
+  color: #666;
+  cursor: not-allowed;
+}
+
+.mp-btn-home {
+  padding: 5px 10px;
+  border: 1px solid #444;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  background: #333;
+  color: #aaa;
+  transition: all 0.15s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.mp-btn-home:hover {
+  background: #444;
+  color: #fff;
 }
