@@ -12,6 +12,9 @@ import MasterCard from './components/right-panel/MasterCard'
 import CompetitionWidget from './components/right-panel/CompetitionWidget'
 import AddLeadModal from './components/AddLeadModal'
 import DraggableDashboard from './components/DraggableDashboard'
+import UserAvatar from './components/UserAvatar'
+import SettingsDropdown from './components/SettingsDropdown'
+import MiniPlayer from './components/MiniPlayer'
 import { Monitor, Folder } from 'lucide-react'
 import { X, FileText, BarChart3, CheckCircle, AlertCircle, XCircle, Globe, Upload, Clock, Users } from 'lucide-react'
 import * as api from './services/api'
@@ -60,6 +63,40 @@ function App() {
   const [ldsStats, setLdsStats] = useState({ totalFiles: 0, activeCount: 0, completedCount: 0 })
   const [fileBrowserRefresh, setFileBrowserRefresh] = useState(0)
   const progressTimerRef = useRef(null)
+
+  const [settings, setSettings] = useState(() => {
+    try {
+      const raw = localStorage.getItem('quali_settings')
+      return raw ? JSON.parse(raw) : { background: 'sunset', glassmorphic: true }
+    } catch { return { background: 'sunset', glassmorphic: true } }
+  })
+  const [showSettings, setShowSettings] = useState(false)
+  const [miniPlayerOpen, setMiniPlayerOpen] = useState(false)
+  const settingsAnchorRef = useRef(null)
+
+  useEffect(() => {
+    try { localStorage.setItem('quali_settings', JSON.stringify(settings)) } catch {}
+  }, [settings])
+
+  const settingsWithUser = { ...settings, _userName: auth.displayName }
+
+  const customBgPreview = settings.background === 'custom'
+    ? (() => { try { return localStorage.getItem('quali_custom_bg') } catch { return null } })()
+    : null
+
+  function getBackgroundStyle() {
+    if (settings.background === 'custom' && customBgPreview) {
+      return { backgroundImage: `url(${customBgPreview})` }
+    }
+    if (settings.background === 'dark') return {}
+    const map = {
+      sunset: '/assets/dashboard-bg.jpg',
+      ocean: '/assets/dashboard-ocean.jpg',
+      forest: '/assets/dashboard-forest.jpg',
+    }
+    const url = map[settings.background]
+    return url ? { backgroundImage: `url(${url})` } : {}
+  }
 
   useEffect(() => {
     allRowsRef.current = allRows
@@ -762,6 +799,13 @@ function App() {
     setView('landing')
   }, [])
 
+  const handleMiniPlayerSearch = useCallback((row) => {
+    if (row && row.searchValue) {
+      const url = `https://www.google.com/search?q=${encodeURIComponent(row.searchValue)}&_t=${Date.now()}`
+      window.open(url, '_blank')
+    }
+  }, [])
+
   const handleExport = useCallback(() => {
     const headers = ['name', 'query', 'website', 'company_phone', 'email', 'Lead Status', 'Comments']
     const data = allRows.filter(r => r.tag).map(r => {
@@ -839,18 +883,48 @@ function App() {
 
   if (view === 'landing') {
     return (
-      <div className="app">
+      <div className={`app ${settings.glassmorphic ? '' : 'no-glass'}`}>
         <header className="app-header">
           <h1>Quali</h1>
           <p className="app-subtitle">Lead Review Tool — Web</p>
           <div className="header-user">
-            <span className="header-username">{auth.displayName}</span>
-            <button className="btn-logout" onClick={handleLogout}>Logout</button>
+            <div className="header-user-btn-wrapper">
+              <button
+                className="header-user-btn"
+                ref={settingsAnchorRef}
+                onClick={() => setShowSettings(!showSettings)}
+              >
+                <UserAvatar name={auth.displayName} size={28} />
+                <span className="header-username">{auth.displayName}</span>
+                <svg className={`header-chevron ${showSettings ? 'open' : ''}`} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              {showSettings && (
+                <SettingsDropdown
+                  settings={settingsWithUser}
+                  onSettingsChange={setSettings}
+                  onLogout={() => { setShowSettings(false); handleLogout() }}
+                  onClose={() => setShowSettings(false)}
+                  anchorRef={settingsAnchorRef}
+                  customBgPreview={customBgPreview}
+                />
+              )}
+            </div>
+            <button className="btn-mp-toggle" onClick={() => setMiniPlayerOpen(!miniPlayerOpen)} title="Toggle mini player">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            </button>
           </div>
         </header>
-        <main className="app-main landing-main">
+        <main className={`app-main landing-main ${miniPlayerOpen && allRows.length > 0 ? 'with-mini-player' : ''}`} style={getBackgroundStyle()}>
           <DraggableDashboard renderCard={renderCard} />
         </main>
+        {miniPlayerOpen && allRows.length > 0 && (
+          <MiniPlayer
+            rows={allRows}
+            onTag={handleTag}
+            onSearch={handleMiniPlayerSearch}
+            onClose={() => setMiniPlayerOpen(false)}
+          />
+        )}
         {showAddLead && <AddLeadModal onClose={() => { setShowAddLead(false); if (isAdditional) { setView('batch'); setIsAdditional(false) } }} onAdd={handleAddLead} />}
         <ToastContainer />
       </div>
