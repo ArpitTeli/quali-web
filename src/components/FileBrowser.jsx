@@ -62,24 +62,24 @@ function buildTree(files) {
   return root
 }
 
-function getAssignmentForFile(fileId, assignments) {
+function getAssignmentForFile(fileId, assignments, userId) {
   if (!assignments) return null
-  return assignments.find(a => a.fileId === fileId && a.status === 'Active') || null
+  return assignments.find(a => a.fileId === fileId && a.status === 'Active' && a.userId === userId) || null
 }
 
-function getFileStatus(file, assignments) {
-  const myAssignment = getAssignmentForFile(file.fileId, assignments)
+function getFileStatus(file, assignments, userId) {
+  const myAssignment = getAssignmentForFile(file.fileId, assignments, userId)
   if (myAssignment) {
     if (myAssignment.completedAt) return { type: 'completed', label: 'Completed', color: '#4ade80' }
     return { type: 'yours', label: 'Claimed ✓', color: '#60a5fa' }
   }
   const otherAssignment = assignments ? assignments.find(a => a.fileId === file.fileId && a.status === 'Active') : null
-  if (otherAssignment) return { type: 'assigned', label: 'Assigned', color: '#facc15' }
+  if (otherAssignment) return { type: 'assigned', label: 'Claimed by ' + otherAssignment.userId, color: '#facc15' }
   return { type: 'available', label: 'Available', color: '#71717a' }
 }
 
-function FileNode({ file, assignments, onClaim, claimLoading }) {
-  const status = getFileStatus(file, assignments)
+function FileNode({ file, assignments, onClaim, claimLoading, userId }) {
+  const status = getFileStatus(file, assignments, userId)
   const canClaim = status.type === 'available'
 
   return (
@@ -102,7 +102,7 @@ function FileNode({ file, assignments, onClaim, claimLoading }) {
   )
 }
 
-function TreeNode({ node, depth, expanded, toggle, assignments, onClaim, claimLoading }) {
+function TreeNode({ node, depth, expanded, toggle, assignments, onClaim, claimLoading, userId }) {
   const isExpanded = expanded.has(node.path)
   const hasItems = node.children.length > 0 || node.files.length > 0
 
@@ -134,6 +134,7 @@ function TreeNode({ node, depth, expanded, toggle, assignments, onClaim, claimLo
               assignments={assignments}
               onClaim={onClaim}
               claimLoading={claimLoading}
+              userId={userId}
             />
           ))}
           {node.files.map(f => (
@@ -143,6 +144,7 @@ function TreeNode({ node, depth, expanded, toggle, assignments, onClaim, claimLo
               assignments={assignments}
               onClaim={onClaim}
               claimLoading={claimLoading}
+              userId={userId}
             />
           ))}
         </>
@@ -263,6 +265,7 @@ export default function FileBrowser({ onClaim, onBack, userId }) {
                 assignments={assignments}
                 onClaim={handleClaim}
                 claimLoading={claimLoading}
+                userId={userId}
               />
             ))
           )}

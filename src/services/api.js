@@ -1,12 +1,12 @@
-const AUTH_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwSiaVgUWKr0N_IRJzeWU04c9fctHBfZp8DDTiXdAssYhLjQ7B5wiqtOZfRbEOVKSF7sA/exec'
+const AUTH_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw2OhNqbHIq2V5r084_c6nktmJG0WY00bGDFTFhSPptV5m4cqgV6UtNMXDW-zZdTP3knQ/exec'
 const CLOUD_MASTER_URL = 'https://script.google.com/macros/s/AKfycbxzMPAp73lSht16-PnmKh1Z4jD2t4a7Ma3fauAKbkmN4w6g_pqPvVD6xruK5ZeQTEBs3g/exec'
 const PUSH_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwnHEf1fq1MikibZfN8dpZuXCWmZX4kxBg2VMDulm4809X7BGWRrhlGdCaD3VwXTYQD/exec'
 
 // Per-user master sheet Apps Script
 const MASTER_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyRKL4dz_F3nfWWW6APiDDKiVsiJ3uorX2MZr2g0t2oWZX8qhTx5-oknx0qDIs_PjrQ/exec'
 
-// LDS (Lead Distribution System) Apps Script
-const LDS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxRh5kQFpJ8e8n9cDrjMCgwQb709uCrN2pXuEyavBSMN6hhrS2MfSB4kuGNJOI0BvZ-YA/exec'
+// LDS — same deployment as Auth (combined script)
+const LDS_SCRIPT_URL = AUTH_SCRIPT_URL
 
 async function post(url, body) {
   const res = await fetch(url, {

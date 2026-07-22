@@ -177,10 +177,35 @@ function handleGetFileTree(body) {
   if (scanResult.error) return json({ error: scanResult.error })
 
   var syncResult = syncFilesToSheet(scanResult.files)
-  var assignments = getUserAssignments(userId)
-  var tree = buildTree(syncResult.sheetFiles, assignments)
+  var myAssignments = getUserAssignments(userId)
+  var allActive = getAllActiveAssignments()
+  var tree = buildTree(syncResult.sheetFiles, allActive)
 
-  return json({ tree: tree, assignments: assignments })
+  return json({ tree: tree, assignments: allActive, myAssignments: myAssignments })
+}
+
+function getAllActiveAssignments() {
+  var sheet = getAssignmentsSheet()
+  var data = sheet.getDataRange().getValues()
+  var result = []
+
+  for (var i = 1; i < data.length; i++) {
+    var status = String(data[i][5] || '').trim()
+    if (status === 'Active' || status === 'Completed') {
+      result.push({
+        assignmentId: String(data[i][0] || ''),
+        fileId: String(data[i][1] || '').trim(),
+        userId: String(data[i][2] || ''),
+        assignedAt: String(data[i][3] || ''),
+        completedAt: String(data[i][4] || ''),
+        status: status,
+        filename: String(data[i][8] || '') || String(data[i][1] || '').trim(),
+        row: i + 1
+      })
+    }
+  }
+
+  return result
 }
 
 function scanDriveFolder() {
@@ -370,6 +395,7 @@ function handleClaimFile(body) {
   var sheet = getAssignmentsSheet()
   var data = sheet.getDataRange().getValues()
 
+  // Check if THIS user already has an Active assignment
   for (var i = 1; i < data.length; i++) {
     if (String(data[i][1] || '').trim() === fileId &&
         String(data[i][2] || '').trim() === userId &&
@@ -383,6 +409,15 @@ function handleClaimFile(body) {
       }
       var fileData = String(data[i][7] || '')
       return json({ assignment: existing, fileData: fileData })
+    }
+  }
+
+  // Check if ANY other user already has an Active assignment for this file
+  for (var j = 1; j < data.length; j++) {
+    if (String(data[j][1] || '').trim() === fileId &&
+        String(data[j][5] || '').trim() === 'Active') {
+      var claimedBy = String(data[j][2] || '').trim()
+      return json({ error: 'File already claimed by ' + claimedBy })
     }
   }
 
