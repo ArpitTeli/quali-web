@@ -11,7 +11,7 @@
 //   LDS_Assignments — tracks user assignments, progress, and cached file data
 //
 // Config:
-var FOLDER_ID = '15my4rIu1E0QBZUKfBYepAtdSQ2eH4sbf' // Google Drive folder ID
+var FOLDER_ID = '{{LDS_DRIVE_FOLDER_ID}}' // Google Drive folder ID
 
 function doPost(e) {
   try {

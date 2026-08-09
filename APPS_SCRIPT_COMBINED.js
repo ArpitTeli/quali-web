@@ -16,7 +16,7 @@
 //
 // LDS tabs (auto-created): LDS_Files, LDS_Assignments
 
-var FOLDER_ID = '15my4rIu1E0QBZUKfBYepAtdSQ2eH4sbf'
+var FOLDER_ID = '{{LDS_DRIVE_FOLDER_ID}}'
 
 function doPost(e) {
   try {

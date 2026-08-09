@@ -1,9 +1,9 @@
-const AUTH_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyGNhTwKLrht1ZBMev1btWe19AZTM1VVAigsbdt9KYmkhUyYvwITP4WBs-SggNYkleInw/exec'
-const CLOUD_MASTER_URL = 'https://script.google.com/macros/s/AKfycbxzMPAp73lSht16-PnmKh1Z4jD2t4a7Ma3fauAKbkmN4w6g_pqPvVD6xruK5ZeQTEBs3g/exec'
-const PUSH_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwnHEf1fq1MikibZfN8dpZuXCWmZX4kxBg2VMDulm4809X7BGWRrhlGdCaD3VwXTYQD/exec'
+const AUTH_SCRIPT_URL = '{{QUALI_WEB_AUTH_SCRIPT_URL}}'
+const CLOUD_MASTER_URL = '{{QUALI_WEB_CLOUD_MASTER_URL}}'
+const PUSH_SCRIPT_URL = '{{QUALI_WEB_PUSH_SCRIPT_URL}}'
 
 // Per-user master sheet Apps Script
-const MASTER_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyRKL4dz_F3nfWWW6APiDDKiVsiJ3uorX2MZr2g0t2oWZX8qhTx5-oknx0qDIs_PjrQ/exec'
+const MASTER_SCRIPT_URL = '{{QUALI_WEB_MASTER_SCRIPT_URL}}'
 
 // LDS — same deployment as Auth (combined script)
 const LDS_SCRIPT_URL = AUTH_SCRIPT_URL
